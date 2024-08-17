@@ -1,0 +1,11 @@
+workspace = { members = ["libs/core"] }
+[package]
+name = "bangudownload"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+feed-rs = "2.1.0"
+nyaa-si = "0.1.3"
+rss = "2.0.8"
+tokio = "1.39.2"
