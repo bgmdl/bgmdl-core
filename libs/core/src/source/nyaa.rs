@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-
 use nyaa_si::{model::Torrent, Client, NyaaCategory, NyaaClient, QueryBuilder, Sort};
-use regex::Regex;
-use tokio::runtime::{self, Runtime};
+use tokio::runtime;
 
 use crate::utils::parsetitle;
 
@@ -18,9 +16,9 @@ macro_rules! async_run {
     }};
 }
 
-pub fn query_on_nyaa(key: String) -> Vec<Torrent> {
+pub fn query_on_nyaa(key: &String) -> Vec<Torrent> {
     let query = QueryBuilder::new()
-        .search(key.as_str())
+        .search((*key).as_str())
         .sort(Sort::Downloads)
         .category(NyaaCategory::Anime)
         .build();
@@ -45,16 +43,17 @@ pub struct SearchResult {
 }
 
 //search by name list, get fansubs data.
-pub fn search_by_namelist(name_list: Vec<String>) -> SearchResult {
+pub fn search_by_namelist(name_list: &Vec<String>) -> SearchResult {
     let mut fansub_list = vec![];
     let mut fansub_map: HashMap<String, u32> = HashMap::new();
     let mut fansub_info: HashMap<String, FanSubInfo> = HashMap::new();
+    let name_list = &name_list[..];
     for name in name_list {
-        let result = query_on_nyaa(name);
+        let result = query_on_nyaa(&name);
         for torrent in result {
-            let data = parsetitle::parse(torrent.title.clone());
+            let data = parsetitle::parse(&torrent.title);
             if fansub_map.contains_key(&data.fansub) {
-                let count = fansub_map.get(&data.fansub.clone()).unwrap();
+                let count = fansub_map.get(&data.fansub).unwrap();
                 if data.ep > *count as i32 {
                     fansub_map.insert(data.fansub.clone(), data.ep as u32);
                 }
@@ -76,9 +75,9 @@ pub fn search_by_namelist(name_list: Vec<String>) -> SearchResult {
             }
         }
     }
-    dbg!(fansub_list.clone());
-    dbg!(fansub_map.clone());
-    dbg!(fansub_info.clone());
+    dbg!(&fansub_list);
+    dbg!(&fansub_map);
+    dbg!(&fansub_info);
     SearchResult {
         fansub_list,
         fansub_map,
@@ -86,23 +85,23 @@ pub fn search_by_namelist(name_list: Vec<String>) -> SearchResult {
     }
 }
 
-pub fn search_by_fansub_with_name(fansub: String, name: String) -> Vec<Torrent> {
+pub fn search_by_fansub_with_name(fansub: &String, name: &String) -> Vec<Torrent> {
     let query = QueryBuilder::new()
-        .search(format!("{} {}", fansub, name).as_str())
+        .search(format!("{} {}", *fansub, *name).as_str())
         .sort(Sort::Downloads)
         .category(NyaaCategory::Anime)
         .build();
     let client = NyaaClient::new();
-    async_run!{
+    async_run! {
         let result = client.get(&query).await.unwrap();
         let mut torrent_list = vec![];
         for torrent in result {
-            let data = parsetitle::parse(torrent.title.clone());
-            if data.fansub == fansub {
+            let data = parsetitle::parse(&torrent.title);
+            if data.fansub == (*fansub) {
                 torrent_list.push(torrent);
             }
         }
-        dbg!(torrent_list.clone());
+        dbg!(&torrent_list);
         torrent_list
     }
 }
@@ -113,20 +112,22 @@ mod test {
 
     #[test]
     fn test_query_on_nyaa() {
-        let result = query_on_nyaa("Senpai wa Otokonoko".to_string());
+        let result = query_on_nyaa(&"Senpai wa Otokonoko".to_string());
         assert!(result.len() > 0);
     }
 
     #[test]
     fn test_search_by_namelist() {
         let name_list = vec!["Senpai wa Otokonoko 1080p".to_string()];
-        search_by_namelist(name_list);
+        search_by_namelist(&name_list);
         assert!(true);
     }
 
     #[test]
     fn test_search_by_fansub_with_name() {
-        let result = search_by_fansub_with_name("ANi".to_string(), "Senpai wa Otokonoko".to_string());
+        let fansub = "ANi".to_string();
+        let name = "Senpai wa Otokonoko".to_string();
+        let result = search_by_fansub_with_name(&fansub, &name);
         assert!(result.len() > 0);
     }
 }

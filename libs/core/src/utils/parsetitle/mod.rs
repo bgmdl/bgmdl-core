@@ -15,8 +15,8 @@ pub struct ParserTitleResult {
 
 pub const LANG_LIST: [&str; 7] = ["CHS", "CHT", "JPN", "ENG", "RUS", "ITA", "SPA"];
 
-pub fn parse(title: String) -> ParserTitleResult {
-    dbg!(title.clone());
+pub fn parse(title: &String) -> ParserTitleResult {
+    dbg!(title);
     let re = Regex::new(r"\[([^\n\r\[\]]*)\]").unwrap();
     let mut result = ParserTitleResult {
         fansub: "".to_string(),
@@ -133,13 +133,13 @@ pub mod test {
     #[test]
     pub fn test_parse_title() {
         let title = "[ANi]ABCDEFG - 05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.fansub, String::from("ANi"));
         let title = "【ANi】ABCDEFG - 05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.fansub, String::from("ANi"));
         let title: String = "【喵喵喵】ABCDEFG - 05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.fansub, String::from("喵喵喵"));
     }
 
@@ -147,19 +147,19 @@ pub mod test {
     #[test]
     pub fn test_parse_multiep() {
         let title = "[ANi]ABCDEFG - 01~05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.start_ep, 1);
         assert_eq!(result.end_ep, 5);
         let title = "[ANi]ABCDEFG - 01-05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.start_ep, 1);
         assert_eq!(result.end_ep, 5);
         let title = "[ANi]ABCDEFG - 01 - 05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.start_ep, 1);
         assert_eq!(result.end_ep, 5);
         let title = "[ANi]ABCDEFG - S03E01 - S03E05".to_string();
-        let result = parse(title);
+        let result = parse(&title);
         assert_eq!(result.start_ep, 1);
         assert_eq!(result.end_ep, 5);
     }
