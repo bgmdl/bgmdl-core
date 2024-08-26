@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use nyaa_si::{model::Torrent, Client, NyaaCategory, NyaaClient, QueryBuilder, Sort};
+use std::collections::HashMap;
 use tokio::runtime;
 
 use crate::utils::parsetitle;
@@ -7,9 +7,9 @@ use crate::utils::parsetitle;
 macro_rules! async_run {
     ($($body:tt)*) => {{
         let bt = runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+            .enable_all()
+            .build()
+            .unwrap();
         bt.block_on(async {
             $($body)*
         })
@@ -24,7 +24,7 @@ pub fn query_on_nyaa(key: &String) -> Vec<Torrent> {
         .build();
     let client = NyaaClient::new();
 
-    async_run!{
+    async_run! {
         client.get(&query).await.unwrap()
     }
 }
