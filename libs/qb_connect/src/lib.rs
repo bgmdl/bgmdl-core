@@ -63,8 +63,8 @@ impl DownloadTools for QBtools {
     fn progress_update_run(&mut self, mut callback: Box<dyn FnMut(DownloadData) -> () + Send>) -> () {
         let mut latest_data = HashMap::new();
         let mut data = DownloadData {
-            name: "qb".to_string(),
-            status: "Downloading".to_string(),
+            name: "".to_string(),
+            status: "".to_string(),
             progress: 0.0,
             speed: 0,
             eta: 0,
@@ -73,9 +73,12 @@ impl DownloadTools for QBtools {
         let password = self.password.clone();
         let link = self.link.clone();
         thread::spawn(move || {
-        let credential = Credential::new(username, password);
+            let credential = Credential::new(username, password);
             let client = Qbit::new(link.as_str(), credential);
+            let mut times = 0;
             loop {
+                times += 1;
+                times %= 5;
                 let torrents = async_run! {
                     client.get_torrent_list(GetTorrentListArg {
                     filter: Some(TorrentFilter::Active),
@@ -101,6 +104,21 @@ impl DownloadTools for QBtools {
                         callback(data.clone());
                     }
                 }
+                // drop inactive torrent
+                if times % 5 == 4 {
+                    let torrents = async_run! {
+                        client.get_torrent_list(GetTorrentListArg {
+                        filter: Some(TorrentFilter::Inactive),
+                        ..Default::default()
+                    }).await.unwrap()};
+                    for torrent in torrents {
+                        let name = torrent.name.unwrap_or("".to_string());
+                        if latest_data.contains_key(&name) {
+                            latest_data.remove(&name);
+                        }
+                    }
+                }
+                thread::sleep(std::time::Duration::from_secs(2));
             }
         });
 

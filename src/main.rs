@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use download_link::{DownloadData, DownloadTools};
+use download_link::{DownloadTools};
 use libloading::{Library, Symbol};
 
 type DownloadToolsLoad = unsafe fn() -> *mut dyn DownloadTools;
