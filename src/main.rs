@@ -13,7 +13,6 @@ fn main() {
         let plugin_create: Symbol<DownloadToolsLoad> = lib.get(b"apply").unwrap();
         Box::from_raw(plugin_create())
     };
-    println!("start");
     let _ = plugin.login("", "", "");
     let _ = plugin.progress_update_run(Box::new(move |data| {
         // dbg!(data);
