@@ -1,6 +1,6 @@
 use reqwest::{self, blocking, header::{ACCEPT, USER_AGENT}};
 use crate::utils::error::GetError;
-use crate::declare::bangumi::{self, BangumiInfoInfoboxValue};
+use crate::declare::bangumi;
 
 pub type Result<T> = ::std::result::Result<T, GetError>;
 
@@ -17,7 +17,7 @@ pub fn get_bangumi_info(client: blocking::Client, key: String) -> Result<bangumi
     let id = search_result.list.unwrap()[0].id.unwrap();
     let url = format!("https://api.bgm.tv/v0/subjects/{}", id);
     let res = client.get(url.as_str())
-        .header(USER_AGENT, "Rust Crawal")
+        .header(USER_AGENT, "BGMdl Crawal")
         .header(ACCEPT, "json")
         .send()?;
     let body = res.text()?;
@@ -32,8 +32,8 @@ pub fn get_bangumi_names(client: blocking::Client, key: String) -> Result<Vec<St
         if keys.key.unwrap() == "别名" {
             let datas = keys.value.unwrap();
             match datas {
-                BangumiInfoInfoboxValue::TypeA(_) => {}
-                BangumiInfoInfoboxValue::TypeB(datas) => {
+                bangumi::BangumiInfoInfoboxValue::TypeA(_) => {}
+                bangumi::BangumiInfoInfoboxValue::TypeB(datas) => {
                     for data in datas {
                         names.push(data.v.unwrap());
                     }

@@ -14,5 +14,6 @@ pub trait DownloadTools {
     fn download_by_link(&mut self, url: &str, savepath: &str, rename: &str) -> Result<(), Box<dyn std::error::Error>>;
     // such as init.
     fn login(&mut self, username: &str, password: &str, link: &str) -> Result<(), Box<dyn std::error::Error>>;
+    // when updated
     fn progress_update_run(&mut self, callback: Box<dyn FnMut(DownloadData) -> () + Send>) -> ();
 }

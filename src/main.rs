@@ -1,15 +1,12 @@
 use std::path::Path;
-
-use download_link::{DownloadTools};
+use download_link::DownloadTools;
 use libloading::{Library, Symbol};
-
 type DownloadToolsLoad = unsafe fn() -> *mut dyn DownloadTools;
 
 fn main() {
-    let lib_path = Path::new("./target/debug/libqb.dylib");  // 根据你的系统选择合适的扩展名
+    let lib_path = Path::new("./target/debug/libqb.dylib");
     let lib =  unsafe{ Library::new(lib_path).unwrap() };
     let mut plugin = unsafe {
-        // 加载符号
         let plugin_create: Symbol<DownloadToolsLoad> = lib.get(b"apply").unwrap();
         Box::from_raw(plugin_create())
     };

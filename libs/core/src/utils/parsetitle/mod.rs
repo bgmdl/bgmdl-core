@@ -1,5 +1,7 @@
 use regex::Regex;
 
+use crate::utils::regex::regex_get;
+
 #[derive(Debug, Clone)]
 pub struct ParserTitleResult {
     pub fansub: String,
@@ -11,15 +13,34 @@ pub struct ParserTitleResult {
     pub start_ep: u32,
     pub end_ep: u32,
     pub is_multi_ep: bool
-}   
+}
 
 pub const LANG_LIST: [&str; 7] = ["CHS", "CHT", "JPN", "ENG", "RUS", "ITA", "SPA"];
 
 pub fn parse(title: &String) -> ParserTitleResult {
     dbg!(title);
-    let re = Regex::new(r"\[([^\n\r\[\]]*)\]").unwrap();
+    let regex_fansub_first = r"\[([^\n\r\[\]]*)\]";
+    let regex_fansub_second = r"【([^\n\r\[\]]*)】";
+    let regex_multi_ep = r"([0-9]{2,4})\s*(-|~|to)\s*(S[0-9]{2,4}E([0-9]{2,4})|E([0-9]{2,4})|([0-9]{2,4}))";
+    let regex_special_without_tag = r"(OVA|SP|OAD|SP)( ?([0-9]{1,2})| )";
+    let regex_special_with_tag = r"\[(OVA|SP|OAD|SP)\]([\s\S]*([0-9]{1,2})| )";
+    let regex_single = vec![
+        r"S\d+E(\d+)",     
+        r"E(\d+)",         
+        r"\b0(\d)\b", 
+        r"\b(\d{2})\b",
+    ];
+
     let mut result = ParserTitleResult {
-        fansub: "".to_string(),
+        fansub: if let Some(fansub) = regex_get(&regex_fansub_first, &title.clone(), 1) {
+            String::from(fansub)
+        } else {
+            if let Some(fansub) = regex_get(&regex_fansub_second, &title.clone(), 1) {
+                String::from(fansub)
+            } else {
+                "".to_string()
+            }
+        },
         is_number_ep: true,
         ep: 0,
         ep_str: "".to_string(),
@@ -29,89 +50,38 @@ pub fn parse(title: &String) -> ParserTitleResult {
         start_ep: 0,
         end_ep: 0
     };
-    if let Some(caps) = re.captures(&title.clone()) {
-        if let Some(matched) = caps.get(1) {
-            result.fansub = String::from(matched.as_str());
-        }
-    } else {
-        dbg!("find 【");
-        let re = Regex::new(r"【([^\n\r\[\]]*)】").unwrap();
-        if let Some(caps) = re.captures(&title.clone()) {
-            if let Some(matched) = caps.get(1) {
-                result.fansub = String::from(matched.as_str());
-            }
-        }
-    }
-    let re = Regex::new(r"([0-9]{2,4})\s*(-|~|to)\s*(S[0-9]{2,4}E([0-9]{2,4})|E([0-9]{2,4})|([0-9]{2,4}))").unwrap();
+    let re = Regex::new(&regex_multi_ep).unwrap();
     if let Some(caps) = re.captures(&title.clone()) {
         result.is_multi_ep = true;
         result.start_ep = caps.get(1).unwrap().as_str().parse::<u32>().unwrap_or(0);
         result.end_ep = caps.get(4).unwrap_or(caps.get(5).unwrap_or(caps.get(6).unwrap_or(caps.get(3).unwrap()))).as_str().parse::<u32>().unwrap_or(0);
     }
-    if title.contains("OVA ") || title.contains("OAD ") || title.contains("SP ") || title.contains("[OVA]") {
+    let re = Regex::new(&regex_special_without_tag).unwrap();
+    if let Some(caps) = re.captures(&title.clone()) {
         result.is_number_ep = false;
         result.ep = -1;
-        let mut ep_str = "".to_string();
-        let mut nstr = title.clone();
-        let start = title.find("OVA ");
-        if let Some(start) = start {
-            ep_str = "OVA".to_string();
-            nstr = title[start..].to_string();
+        result.ep_str = caps.get(1).unwrap().as_str().to_string();
+        if let Some(ep) = caps.get(3) {
+            result.ep = ep.as_str().parse::<i32>().unwrap();
         }
-        let start = title.find("[OVA]");
-        if let Some(start) = start {
-            ep_str = "OVA".to_string();
-            nstr = title[start..].to_string();
-        }
-        let start = nstr.find("OAD ");
-        if let Some(start) = start {
-            ep_str = "OAD".to_string();
-            nstr = nstr[start..].to_string();
-        } 
-        let start = nstr.find("SP ");
-        if let Some(start) = start {
-            ep_str = "SP".to_string();
-            nstr = nstr[start..].to_string();
-        }
-        let mut is_start = false;
-        let mut number = 0;
-        for c in nstr.chars() {
-            if c == ' ' {
-                if is_start {
-                    ep_str.push(c);
-                }
-            } else if c.is_numeric() {
-                is_start = true;
-                number = number * 10 + c.to_digit(10).unwrap() as i32;
-            } else {
-                if is_start {
-                    break;
-                }
-            }
-        }
-        if number == 1080 || number == 720 { // error data
-            number = 0
-        }
-        if number != 0 {
-            ep_str.push_str(&number.to_string());
-        }
-        result.ep_str = ep_str;
-        
     } else {
-        let patterns = vec![
-            r"S\d+E(\d+)",     
-            r"E(\d+)",         
-            r"\b0(\d)\b", 
-            r"\b(\d{2})\b",
-        ];
-        // 判断是否为多集
-        for pattern in patterns {
-            let re = Regex::new(pattern).unwrap();
-            if let Some(caps) = re.captures(&title.clone()) {
-                if let Some(matched) = caps.get(1) {
-                    if let Ok(num) = matched.as_str().parse::<u32>() {
-                        result.ep = num as i32;
-                        break;
+        let re = Regex::new(&regex_special_with_tag).unwrap();
+        if let Some(caps) = re.captures(&title.clone()) {
+            result.is_number_ep = false;
+            result.ep = -1;
+            result.ep_str = caps.get(1).unwrap().as_str().to_string();
+            if let Some(ep) = caps.get(3) {
+                result.ep = ep.as_str().parse::<i32>().unwrap();
+            }
+        } else {
+            for pattern in regex_single {
+                let re = Regex::new(pattern).unwrap();
+                if let Some(caps) = re.captures(&title.clone()) {
+                    if let Some(matched) = caps.get(1) {
+                        if let Ok(num) = matched.as_str().parse::<u32>() {
+                            result.ep = num as i32;
+                            break;
+                        }
                     }
                 }
             }
