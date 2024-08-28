@@ -24,7 +24,7 @@ pub fn parse(title: &String) -> ParserTitleResult {
     let regex_multi_ep = r"([0-9]{2,4})\s*(-|~|to)\s*(S[0-9]{2,4}E([0-9]{2,4})|E([0-9]{2,4})|([0-9]{2,4}))";
     let regex_special_without_tag = r"(OVA|SP|OAD|SP)( ?([0-9]{1,2})| )";
     let regex_special_with_tag = r"\[(OVA|SP|OAD|SP)\]([\s\S]*([0-9]{1,2})| )";
-    let regex_single = vec![
+    let regex_single = [
         r"S\d+E(\d+)",     
         r"E(\d+)",         
         r"\b0(\d)\b", 
@@ -75,14 +75,10 @@ pub fn parse(title: &String) -> ParserTitleResult {
             }
         } else {
             for pattern in regex_single {
-                let re = Regex::new(pattern).unwrap();
-                if let Some(caps) = re.captures(&title.clone()) {
-                    if let Some(matched) = caps.get(1) {
-                        if let Ok(num) = matched.as_str().parse::<u32>() {
-                            result.ep = num as i32;
-                            break;
-                        }
-                    }
+                if let Some(ep) = regex_get(pattern, &title.clone(), 1) {
+                    result.is_number_ep = true;
+                    result.ep = ep.parse::<i32>().unwrap();
+                    break;
                 }
             }
         }
