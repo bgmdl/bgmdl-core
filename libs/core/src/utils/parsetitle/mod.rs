@@ -44,7 +44,14 @@ pub fn parse(title: &String) -> ParserTitleResult {
         is_number_ep: true,
         ep: 0,
         ep_str: "".to_string(),
-        lang: vec![],
+        lang: { let mut result = vec![]; 
+            for lang in LANG_LIST.iter() {
+                if title.contains(lang) {
+                    result.push(lang.to_string());
+                }
+            }
+            result
+        },
         is_multi_lang: false,
         is_multi_ep: false,
         start_ep: 0,
@@ -81,11 +88,6 @@ pub fn parse(title: &String) -> ParserTitleResult {
                     break;
                 }
             }
-        }
-    }
-    for lang in LANG_LIST.iter() {
-        if title.contains(lang) {
-            result.lang.push(lang.to_string());
         }
     }
     dbg!(result.clone());
