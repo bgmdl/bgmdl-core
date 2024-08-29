@@ -1,4 +1,4 @@
-workspace = { members = ["libs/core", "libs/download_link", "libs/qb_connect"] }
+workspace = { members = ["libs/core", "libs/download_link", "libs/qb_connect", "libs/macro_lib"] }
 [package]
 name = "bangudownload"
 version = "0.1.0"
@@ -11,3 +11,6 @@ nyaa-si = "0.1.3"
 rss = "2.0.8"
 tokio = "1.39.2"
 "download_link" = { path = "libs/download_link" }
+"macro_lib" = { path = "libs/macro_lib" }
+serde_json = "1.0.127"
+serde = { version = "1.0.209", features = ["derive"] }

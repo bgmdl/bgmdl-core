@@ -109,6 +109,9 @@ pub mod test {
         let title: String = "【喵喵喵】ABCDEFG - 05".to_string();
         let result = parse(&title);
         assert_eq!(result.fansub, String::from("喵喵喵"));
+        let title: String = "[ANi] ABCD OVA 1".to_string();
+        let result = parse(&title);
+        assert_eq!(result.ep_str, String::from("OVA"));
     }
 
 
