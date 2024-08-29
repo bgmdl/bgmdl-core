@@ -104,16 +104,12 @@ pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-// 你的宏定义
+
 #[proc_macro]
 pub fn generate_commands(_item: TokenStream) -> TokenStream {
-    // 目标文件夹
     let command_dir = "src/command";
-    // 初始化子命令和运行逻辑向量
     let mut subcommands = Vec::new();
     let mut run_functions = Vec::new();
-
-    // 遍历目标文件夹中的文件
     for entry in fs::read_dir(command_dir).expect("Failed to read command directory") {
         let entry = entry.expect("Failed to read entry");
         let path = entry.path();
@@ -158,8 +154,6 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
 
 
 fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
-    let basic_type = vec!["u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "bool", "char"];
-    let basic_type = basic_type.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
     let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
     let run_line = content.lines().find(|line| line.contains("pub fn run("))?;
@@ -197,9 +191,7 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
     let run_fn_call = run_fn_args.iter().map(|arg| {
         let arg_name = arg.split(':').next().unwrap().trim();
         let type_d = arg.split(':').nth(1).unwrap().trim();
-        // if type_d == "Option<...>"
         if type_d.starts_with("Option<") {
-            // remove "Option<...>" but keep the inner type
             let type_d_inner = type_d.trim_start_matches("Option<");
             let type_d_inner = type_d_inner[..type_d_inner.len()-1].to_string();
             let type_d_ident = syn::parse_str::<syn::Type>(type_d_inner.as_str()).unwrap();
