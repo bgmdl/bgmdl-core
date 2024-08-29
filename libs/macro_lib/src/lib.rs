@@ -119,10 +119,7 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
         let path = entry.path();
 
         if path.is_file() && path.extension().unwrap_or_default() == "rs" && path.file_name() != Some("mod.rs".as_ref()) {
-            // 读取文件内容
             let content = fs::read_to_string(&path).expect("Failed to read file");
-            println!("Read file: {:?}", path);
-            // 解析文件内容，提取相关信息
             if let Some((command, run_function)) = parse_command_and_run_from_file(&content, path.file_stem().unwrap().to_str().unwrap()) {
                 subcommands.push(command);
                 run_functions.push(run_function);
@@ -130,15 +127,11 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
             }
         }
     }
-
-    // 构造 clap::Command 代码
     let subcommands_code = subcommands.into_iter().map(|cmd| {
         quote! {
             .subcommand(#cmd)
         }
     });
-
-    // 构造命令匹配和函数调用代码
     let match_arms = run_functions.into_iter().map(|(cmd_name, run_function_call)| {
         quote! {
             (#cmd_name, sub_m) => {
@@ -146,16 +139,13 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
             }
         }
     });
-
     let expanded = quote! {
         pub fn build_cli() -> clap::Command {
             clap::Command::new("bangumidownload")
                 #(#subcommands_code)*
         }
-
         pub fn execute_command() {
             let matches = build_cli().get_matches();
-
             match matches.subcommand().expect("clap will enforce a subcommand is provided") {
                 #(#match_arms,)*
                 (_,_) => {}
@@ -166,7 +156,10 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+
 fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
+    let basic_type = vec!["u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64", "bool", "char"];
+    let basic_type = basic_type.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
     let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
     let run_line = content.lines().find(|line| line.contains("pub fn run("))?;
@@ -204,8 +197,22 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
     let run_fn_call = run_fn_args.iter().map(|arg| {
         let arg_name = arg.split(':').next().unwrap().trim();
         let type_d = arg.split(':').nth(1).unwrap().trim();
-        let type_d_ident = syn::Ident::new(type_d, proc_macro2::Span::call_site());
-        quote! { *sub_m.get_one::<#type_d_ident>(#arg_name).unwrap() }
+        // if type_d == "Option<...>"
+        if type_d.starts_with("Option<") {
+            // remove "Option<...>" but keep the inner type
+            let type_d_inner = type_d.trim_start_matches("Option<");
+            let type_d_inner = type_d_inner[..type_d_inner.len()-1].to_string();
+            let type_d_ident = syn::parse_str::<syn::Type>(type_d_inner.as_str()).unwrap();
+            quote! { { let _res = sub_m.get_one::<#type_d_ident>(#arg_name); if _res == None {
+                None
+            } else {
+                Some(_res.unwrap().clone())
+            } } }
+        } else {
+            let type_d_ident = syn::Ident::new(type_d, proc_macro2::Span::call_site());
+            quote! { *sub_m.get_one::<#type_d_ident>(#arg_name).unwrap() }   
+        }  
+
     });
     let func_ident = syn::Ident::new(path, proc_macro2::Span::call_site());
     Some((
