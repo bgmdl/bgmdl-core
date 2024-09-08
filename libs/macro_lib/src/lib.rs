@@ -1,19 +1,18 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use quote::quote;
+use proc_macro2::Span;
+use quote::{quote, quote_spanned};
 use syn::{parse_macro_input, ItemFn};
 use std::fs;
 
 #[proc_macro]
-pub fn pub_files(input: TokenStream) -> TokenStream {
-    let d = parse_macro_input!(input as syn::LitStr).value();
-    let handlers_path = format!("src/{}", d);
+pub fn pub_handler(_input: TokenStream) -> TokenStream {
+    let handlers_path = format!("src/handler");
     let mut service_calls = Vec::new();
     for entry in fs::read_dir(handlers_path.as_str()).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
-
         if path.is_file() {
             if let Some(filename) = path.file_stem() {
                 if let Some(module_name) = filename.to_str() {
@@ -23,11 +22,41 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     // mod_statements.push_str(&format!("mod {};\n", module_name));
                     service_calls.push(quote!{pub mod #mod_ident;});
+                    println!("Build module: {}", module_name);
                 }
             }
         }
     }
+    let expanded = quote! {
+        #(#service_calls)*
+    };
 
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+pub fn pub_files(input: TokenStream) -> TokenStream {
+    let d = parse_macro_input!(input as syn::LitStr).value();
+    let handlers_path = format!("src/{}", d);
+    let mut service_calls = Vec::new();
+    for entry in fs::read_dir(handlers_path.as_str()).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(filename) = path.file_stem() {
+                if let Some(module_name) = filename.to_str() {
+                    if module_name == "mod" {
+                        continue;
+                    }
+                    let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
+                    // mod_statements.push_str(&format!("mod {};\n", module_name));
+                    service_calls.push(quote!{pub mod #mod_ident;});
+                    println!("Build module: {}", module_name);
+                    eprintln!("Build module: {}", module_name);
+                }
+            }
+        }
+    }
     let expanded = quote! {
         #(#service_calls)*
     };
@@ -39,25 +68,29 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
 pub fn generate_services(_input: TokenStream) -> TokenStream {
     let handlers_path = "src/handler";
     let mut service_calls = Vec::new();
-
-    for entry in fs::read_dir(handlers_path).unwrap() {
-        let entry = entry.unwrap();
+    let data = fs::read_dir(handlers_path).unwrap();
+    let mut sorted_entries: Vec<_> = data
+        .filter_map(|entry| entry.ok())
+        .collect();
+    sorted_entries.sort_by_key(|entry| entry.path());
+    let mut handle_mod_statements = include_str!("./default_handle.rs").to_string();
+    for entry in sorted_entries {
         let path = entry.path();
-
         if path.is_file() {
             if let Some(filename) = path.file_stem() {
                 if let Some(module_name) = filename.to_str() {
                     if module_name == "mod" {
                         continue;
                     }
-                    println!("Build module: {}", module_name);
+                    handle_mod_statements = format!("{}\npub mod {};", handle_mod_statements, module_name);
+                    eprintln!("Build module as service: {}", module_name);
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     service_calls.push(quote!{.service(handler::#mod_ident::service())});
                 }
             }
         }
     }
-
+    fs::write("src/handler/mod.rs", handle_mod_statements).unwrap();
     let expanded = quote! {
         HttpServer::new(|| {
             App::new()
@@ -113,7 +146,6 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     for entry in fs::read_dir(command_dir).expect("Failed to read command directory") {
         let entry = entry.expect("Failed to read entry");
         let path = entry.path();
-
         if path.is_file() && path.extension().unwrap_or_default() == "rs" && path.file_name() != Some("mod.rs".as_ref()) {
             let content = fs::read_to_string(&path).expect("Failed to read file");
             if let Some((command, run_function)) = parse_command_and_run_from_file(&content, path.file_stem().unwrap().to_str().unwrap()) {
@@ -130,7 +162,7 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     });
     let match_arms = run_functions.into_iter().map(|(cmd_name, run_function_call)| {
         quote! {
-            (#cmd_name, sub_m) => {
+            Some((#cmd_name, sub_m)) => {
                 #run_function_call
             }
         }
@@ -142,9 +174,10 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
         }
         pub fn execute_command() {
             let matches = build_cli().get_matches();
-            match matches.subcommand().expect("clap will enforce a subcommand is provided") {
+            match matches.subcommand() {
                 #(#match_arms,)*
-                (_,_) => {}
+                Some((_,_)) => {}
+                None => { println!("No subcommand provided") }
             }
         }
     };
@@ -154,6 +187,7 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
 
 
 fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
+    let func_ident = syn::Ident::new(path, proc_macro2::Span::call_site());
     let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
     let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
     let run_line = content.lines().find(|line| line.contains("pub fn run("))?;
@@ -216,6 +250,7 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
         (
             quote! { #command_name },
             quote! { 
+                
                 command::#func_ident::run(#(#run_fn_call),*); 
             }
         ),
