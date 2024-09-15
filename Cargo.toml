@@ -18,3 +18,5 @@ env_logger = "0.11.5"
 actix-web = "4.9.0"
 log = "0.4.22"
 clap = "4.5.16"
+core = { path = "libs/core" }
+inquire = "0.7.5"

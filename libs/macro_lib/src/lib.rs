@@ -193,7 +193,27 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
     let run_line = content.lines().find(|line| line.contains("pub fn run("))?;
     let command_name = router_line.trim_start_matches("//! router:").trim();
     let description = description_line.trim_start_matches("//! description:").trim();
+    let args = content.lines().find(|line| line.starts_with("//! args:"));
     let mut options = Vec::new();
+    // handle args.
+    if let Some(args) = args {
+        let args = args.trim_start_matches("//! args:").trim();
+        let args = args.split_whitespace().collect::<Vec<&str>>();
+        for arg in args {
+            if arg.starts_with('<') && arg.ends_with('>') {
+                let arg = arg.trim_start_matches('<').trim_end_matches('>');
+                options.push(quote! {
+                    .arg(clap::Arg::new(#arg).required(true))
+                });
+                continue;
+            } else if arg.starts_with('[') && arg.ends_with(']') {
+                let arg = arg.trim_start_matches('[').trim_end_matches(']');
+                options.push(quote! {
+                    .arg(clap::Arg::new(#arg).required(false))
+                });
+            }
+        }
+    }
     for line in content.lines() {
         if line.starts_with("//! --") {
             let option_def = line.trim_start_matches("//! ").trim();
@@ -236,7 +256,7 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
             } } }
         } else {
             let type_d_ident = syn::Ident::new(type_d, proc_macro2::Span::call_site());
-            quote! { *sub_m.get_one::<#type_d_ident>(#arg_name).unwrap() }   
+            quote! { sub_m.get_one::<#type_d_ident>(#arg_name).unwrap().clone() }   
         }  
 
     });
