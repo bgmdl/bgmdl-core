@@ -1,8 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Span;
-use quote::{quote, quote_spanned};
+use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 use std::fs;
 
@@ -55,6 +54,12 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
                     eprintln!("Build module: {}", module_name);
                 }
             }
+        } else if path.is_dir() {
+            let dir_name = path.file_name().unwrap().to_str().unwrap();
+            let mod_ident = syn::Ident::new(dir_name, proc_macro2::Span::call_site());
+            service_calls.push(quote!{pub mod #mod_ident;});
+            println!("Build module: {}", dir_name);
+            eprintln!("Build module: {}", dir_name);
         }
     }
     let expanded = quote! {
@@ -187,7 +192,6 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
 
 
 fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
-    let func_ident = syn::Ident::new(path, proc_macro2::Span::call_site());
     let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
     let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
     let run_line = content.lines().find(|line| line.contains("pub fn run("))?;

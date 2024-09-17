@@ -6,4 +6,5 @@ Cargo.lock
 
 *.local
 config.json
+*.db
 config-*.json

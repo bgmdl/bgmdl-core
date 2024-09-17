@@ -1,4 +1,5 @@
 use env_logger::Builder;
+use log::LevelFilter;
 use macro_lib::generate_commands;
 mod handler; // handler is the controller of the project (web)
 
@@ -8,7 +9,10 @@ generate_commands!();
 
 
 fn main() {
-    Builder::new().parse_env("LOG_LEVEL").init();
+    Builder::new()
+        .filter_module("sqlx::query", LevelFilter::Warn)
+        .parse_env("LOG_LEVEL")
+        .init();
     execute_command();
 }
 
