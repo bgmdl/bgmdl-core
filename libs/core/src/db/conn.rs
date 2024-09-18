@@ -1,4 +1,4 @@
-use sea_orm::{schema, ConnectOptions, Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 use crate::declare::error::CoreError;
 

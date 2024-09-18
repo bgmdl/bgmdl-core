@@ -221,10 +221,11 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
     for line in content.lines() {
         if line.starts_with("//! --") {
             let option_def = line.trim_start_matches("//! ").trim();
+            let option_def = option_def.replace("\\,", "PLACEHOLDER");
             let parts: Vec<&str> = option_def.split(',').collect();
             if parts.len() == 2 {
                 let option_args = parts[0].split_whitespace().collect::<Vec<&str>>();
-                let help_message = parts[1].trim();
+                let help_message = parts[1].trim().replace("PLACEHOLDER", ",");
                 if option_args.len() >= 3 {
                     let option_name = option_args[0].trim_start_matches("--");
                     let short_flag = option_args[1].trim_start_matches('-');

@@ -5,7 +5,10 @@
 //! --schema -s <schema>, schema name
 //! --username -U <username>, username
 //! --password -P <password>, password
+//! --config -c <config>, config file path(optional\, default: ~/.bgmdl/config.json)
 //! --port -p <port>, Init the server port
+
+use std::{fs, path::{self, Path}};
 
 use sha2::{Digest, Sha512};
 
@@ -39,7 +42,7 @@ pub fn ask_select(hints: &str, options: Vec<&str>) -> String {
     }
 }
 
-pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>, username: Option<String>, password: Option<String>, port: Option<u32>) {
+pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>, username: Option<String>, password: Option<String>, port: Option<u32>, config: Option<String>) {
     let _ = port;
     let dbtype = database.unwrap_or(ask_select("Please choose database type", vec!["sqlite", "postgres"]));
     if dbtype != "postgres" && dbtype != "sqlite" {
@@ -76,4 +79,23 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
         log::error!("Error with database: {:?}", data.err());
         return;
     }
+    log::info!("Database initialized");
+    // Initialize the config file
+    let config_path = config.unwrap_or("~/.bgmdl/config.json".to_string()); //TODO: windows will not use this path.
+    fs::create_dir_all(config_path.clone()).unwrap();
+    let config = Json!{
+        "database": {
+            "url": url,
+            "schema": schema,
+        },
+        "port": port.unwrap_or(8080),
+    };
+    let pathd = path::Path::join(Path::new(&config_path), Path::new("config.json"));
+    let data = fs::write(pathd, config.to_string());
+    if data.is_err() {
+        log::error!("Error with config file: {:?}", data.err());
+        return;
+    }
+    log::info!("Config file initialized");
+    log::info!("Initialization completed");
 }

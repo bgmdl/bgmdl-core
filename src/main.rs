@@ -5,8 +5,11 @@ use log::LevelFilter;
 use macro_lib::generate_commands;
 
 include!("./require.rs");
-
 include!("./default.rs");
+
+pub static mut DBLINK: state::InitCell<String> = state::InitCell::new();
+pub static mut DBSCHEMA: state::InitCell<String> = state::InitCell::new();
+
 generate_commands!();
 
 fn main() {
