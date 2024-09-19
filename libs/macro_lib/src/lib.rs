@@ -51,7 +51,6 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
                     // mod_statements.push_str(&format!("mod {};\n", module_name));
                     service_calls.push(quote!{pub mod #mod_ident;});
                     println!("Build module: {}", module_name);
-                    eprintln!("Build module: {}", module_name);
                 }
             }
         } else if path.is_dir() {
@@ -59,7 +58,6 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
             let mod_ident = syn::Ident::new(dir_name, proc_macro2::Span::call_site());
             service_calls.push(quote!{pub mod #mod_ident;});
             println!("Build module: {}", dir_name);
-            eprintln!("Build module: {}", dir_name);
         }
     }
     let expanded = quote! {
@@ -88,7 +86,7 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
                         continue;
                     }
                     handle_mod_statements = format!("{}\npub mod {};", handle_mod_statements, module_name);
-                    eprintln!("Build module as service: {}", module_name);
+                    println!("Build module as service: {}", module_name);
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     service_calls.push(quote!{.service(handler::#mod_ident::service())});
                 }

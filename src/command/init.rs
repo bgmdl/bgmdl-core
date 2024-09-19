@@ -8,8 +8,7 @@
 //! --config -c <config>, config file path(optional\, default: ~/.bgmdl/config.json)
 //! --port -p <port>, Init the server port
 
-use std::{fs, path::{self, Path}};
-
+use std::{fs, path};
 use sha2::{Digest, Sha512};
 
 pub fn ask_input(hints: &str, default: &str) -> String {
@@ -80,9 +79,9 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
         return;
     }
     log::info!("Database initialized");
-    // Initialize the config file
     let config_path = config.unwrap_or("~/.bgmdl/config.json".to_string()); //TODO: windows will not use this path.
-    fs::create_dir_all(config_path.clone()).unwrap();
+    let config_path = path::PathBuf::from(shellexpand::tilde(&config_path).to_string());
+    fs::create_dir_all(config_path.clone().parent().unwrap()).unwrap();
     let config = Json!{
         "database": {
             "url": url,
@@ -90,8 +89,7 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
         },
         "port": port.unwrap_or(8080),
     };
-    let pathd = path::Path::join(Path::new(&config_path), Path::new("config.json"));
-    let data = fs::write(pathd, config.to_string());
+    let data = fs::write(config_path, config.to_string());
     if data.is_err() {
         log::error!("Error with config file: {:?}", data.err());
         return;
