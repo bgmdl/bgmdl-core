@@ -1,4 +1,4 @@
-workspace = { members = ["libs/core", "libs/download_link", "libs/qb_connect", "libs/macro_lib", "libs/database_connect"] }
+workspace = { members = ["libs/core", "libs/download_link", "libs/qb_connect", "libs/macro_lib"] }
 [package]
 name = "bangudownload"
 version = "0.1.0"

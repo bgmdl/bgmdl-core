@@ -6,7 +6,7 @@
 //! --username -U <username>, username
 //! --password -P <password>, password
 //! --config -c <config>, config file path(optional\, default: ~/.bgmdl/config.json)
-//! --port -p <port>, Init the server port
+//! --port -p <port>, Init the server port(optional\, default: 1824)
 
 use std::{fs, path};
 use sha2::{Digest, Sha512};
@@ -87,7 +87,7 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
             "url": url,
             "schema": schema,
         },
-        "port": port.unwrap_or(8080),
+        "port": port.unwrap_or(1824),
     };
     let data = fs::write(config_path, config.to_string());
     if data.is_err() {

@@ -1,47 +1,24 @@
-use std::{cmp::Ordering, collections::{BinaryHeap, HashMap}};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap},
+};
 
-use download_link::DownloadData;
+use crate::declare::error::CoreError;
+use super::run::{self, change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll, report_error::ReportError};
 
 pub enum TaskDetail {
     Download(TaskDownload),
     DownloadAll(TaskDownloadAll),
     ChangeName(ChangeName),
-    ReportError(ReportError)
+    ReportError(ReportError),
 }
 
-pub struct TaskDownload {
-    update_func: Box<dyn FnMut(DownloadData) -> () + Send>,
-    url: String,
-    savepath: String,
-    save_name: String,
-}
-
-
-pub struct TaskDownloadAll {
-    update_func: Box<dyn FnMut(DownloadData) -> () + Send>,
-    url: String,
-    savepath: String,
-}
-
-
-#[derive(Clone)]
-pub struct ChangeName {
-    path: String,
-}
-
-
-#[derive(Clone)]
-pub struct ReportError {
-    error: String,
-}
-
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct TaskMap {
     pub status: String,
     pub priopity: i32,
     pub taskid: u32,
 }
-
 
 impl Ord for TaskMap {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -57,7 +34,8 @@ impl PartialOrd for TaskMap {
 
 pub struct TaskQueue {
     pub task_map: BinaryHeap<TaskMap>, // max in top
-    pub tasks: HashMap<u32, TaskDetail>,
+    pub task_list: HashMap<u32, TaskMap>,
+    pub tasks: HashMap<u32, TaskDetail>, 
 }
 
 impl TaskQueue {
@@ -65,40 +43,101 @@ impl TaskQueue {
         TaskQueue {
             task_map: BinaryHeap::new(),
             tasks: HashMap::new(),
+            task_list: HashMap::new(),
         }
     }
 
     pub fn push(&mut self, task: TaskDetail, priopity: i32) {
         let taskid = self.tasks.len() as u32;
-        self.task_map.push(TaskMap {
+        let item = TaskMap {
             status: "waiting".to_string(),
             priopity,
-            taskid
-        });
+            taskid,
+        };
+        self.task_map.push(item.clone());
+        self.task_list.insert(taskid, item);
         self.tasks.insert(taskid, task);
     }
 
-    pub fn exec_top(&mut self) {
-        
+    pub fn exec_top_block(&mut self) -> Result<(), CoreError> {
+        async_run!{
+            self.exec_top().await
+        }
+    }
+
+    pub fn change_status(&mut self, taskid: u32, status: &str) {
+        if let Some(item) = self.task_list.get_mut(&taskid) {
+            item.status = status.to_string();
+        }
+        self.task_map.retain(|task| {
+            if task.taskid == taskid {
+                return false;
+            }
+            true
+        });
+        self.task_map.push(self.task_list.get(&taskid).unwrap().clone());
+    }
+
+    pub async fn exec_top(&mut self) -> Result<(), CoreError> {
+        if self.task_map.is_empty() {
+            log::debug!("task queue is empty");
+            return Ok(());
+        }
+        let task = self.task_map.pop().unwrap();
+        if let Some(task) = self.tasks.get_mut(&task.taskid) {
+            match task {
+                TaskDetail::Download(task) => {
+                    run::download::apply(task).await;
+                }
+                TaskDetail::DownloadAll(task) => {
+                    run::download_all::apply(task).await;
+                }
+                TaskDetail::ChangeName(task) => {
+                    run::change_name::apply(task).await;
+                }
+                TaskDetail::ReportError(task) => {
+                    run::report_error::apply(task).await;
+                }
+            }
+        } else {
+            log::warn!("task not found in task queue (server error).");
+        }
+        Ok(())
     }
 
     pub fn drop(&mut self) {
-        self.tasks.retain(|taskid, task| {
-            if let Some(task_map) = self.task_map.peek() {
-                if task_map.taskid == *taskid {
-                    return true;
-                }
-            }
-            if let TaskDetail::Download(task) = task {
-                if task.url == "done" {
+        self.tasks.retain(|taskid, _task| {
+            // check task status
+            let item = self.task_list.get(taskid);
+            if let Some(item) = item {
+                if item.status == "done" {
                     return false;
                 }
+            } else {
+                return false;
+            }
+            true
+        });
+        self.task_map.retain(|task| {
+            let item = self.task_list.get(&task.taskid);
+            if item.is_none() {
+                return false;
+            }
+            if self.tasks.get(&task.taskid).is_none() {
+                return false;
+            }
+            true
+        });
+        self.task_list.retain(|taskid, _item| {
+            if self.tasks.get(taskid).is_none() {
+                return false;
             }
             true
         });
     }
 
-    pub fn drop_id(&mut self, taskid: u32) { // nlogn delete.
+    pub fn drop_id(&mut self, taskid: u32) {
+        // nlogn delete.
         self.task_map.retain(|task| task.taskid != taskid);
         self.tasks.remove(&taskid);
     }
