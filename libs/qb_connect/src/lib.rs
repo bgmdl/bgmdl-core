@@ -1,18 +1,9 @@
-
-use std::{collections::HashMap, thread};
-
-use download_link::{DownloadData, DownloadTools};
+use download_link::DownloadData;
 use qbit_rs::{model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource}, Qbit};
 use tokio::runtime;
-
-pub struct QBtools {
-    username: String,
-    password: String,
-    link: String,
-    client: Option<Qbit>,
-}
-
-unsafe impl Send for QBtools {}
+use std::{collections::HashMap, ffi::CStr, os::raw::{c_char, c_void}, thread};
+use lazy_static::lazy_static;
+use log;
 
 macro_rules! async_run {
     ($($body:tt)*) => {{
@@ -26,123 +17,110 @@ macro_rules! async_run {
     }};
 }
 
-impl DownloadTools for QBtools {
-    fn download_by_link(&mut self, url: &str, savepath: &str, rename: &str) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(client) = &self.client {
-            let result = async_run! {
-                client.add_torrent(AddTorrentArg {
-                    source: TorrentSource::Urls{urls: url.to_string().parse().unwrap()},
-                    savepath: if savepath == "default".to_string() { None } else { Some(savepath.to_string()) },
-                    rename: Some(rename.to_string()),
-                    ..Default::default()
-                }).await
-            } as Result<(), qbit_rs::Error>;
-            if let Err(e) = result {
-                return Err(e.to_string().into());
-            }
-            Ok(())
-        } else {
-            Err("Please login first".into())
-        }
-    }
+type Callback = extern "C" fn(*mut c_void, DownloadData);
 
-    fn login(&mut self, username: &str, password: &str, link: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let credential = Credential::new(username, password);
-        let client = Qbit::new(link, credential);
-        self.client = Some(client);
-        self.username = username.to_string();
-        self.password = password.to_string();
-        self.link = link.to_string();
-        Ok(())
-    }
+struct DownloadType {
+    url: String,
+    savepath: String,
+    rename: String,
+    func: Callback,
+}
 
-    fn start(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
-    }
+lazy_static! {
+    static ref DOWNLOAD_TASK_STATUS: std::sync::Mutex<HashMap<String, DownloadData>> = std::sync::Mutex::new(HashMap::new());
+    static ref DOWNLOAD_CALLBACK_TASKS: std::sync::Mutex<HashMap<String, Callback>> = std::sync::Mutex::new(HashMap::new());
+    static ref DOWNLOAD_REQUEST: std::sync::Mutex<HashMap<String, DownloadType>> = std::sync::Mutex::new(HashMap::new());
+}
 
-    fn progress_update_run(&mut self, mut callback: Box<dyn FnMut(DownloadData) -> () + Send>) -> () {
-        let mut latest_data = HashMap::new();
-        let mut data = DownloadData {
-            name: "".to_string(),
-            status: "".to_string(),
-            progress: 0.0,
-            speed: 0,
-            eta: 0,
-        };
-        let username = self.username.clone();
-        let password = self.password.clone();
-        let link = self.link.clone();
-        thread::spawn(move || {
-            let credential = Credential::new(username, password);
-            let client = Qbit::new(link.as_str(), credential);
-            let mut times = 0;
-            loop {
-                times += 1;
-                times %= 5;
+#[no_mangle]
+pub extern "C" fn start(link: *const c_char, username: *const c_char, password: *const c_char) -> i32 {
+    let link = unsafe { CStr::from_ptr(link).to_str().unwrap().to_string() };
+    let username = unsafe { CStr::from_ptr(username).to_str().unwrap().to_string() };
+    let password = unsafe { CStr::from_ptr(password).to_str().unwrap().to_string() };
+    thread::spawn(move || {
+        dbg!("start download thread");
+        log::info!("start download thread successfully");
+        let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
+        let mut times = 0;
+        loop {
+            if times == 0 { // 5 second / update torrent status 
+                // check client status.
                 let torrents = async_run! {
                     client.get_torrent_list(GetTorrentListArg {
                     filter: Some(TorrentFilter::Active),
                     ..Default::default()
-                }).await.unwrap()};
+                }).await};
+                if let Err(_) = torrents {
+                    log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
+                    client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
+                    thread::sleep(std::time::Duration::from_secs(5));
+                    continue;
+                }
+                
+                let torrents = torrents.unwrap();
                 for torrent in torrents {
-                    let progress = torrent.progress.unwrap_or(0.0);
-                    let eta = torrent.eta.unwrap_or(0);
-                    let speed = torrent.dlspeed.unwrap_or(0);
-                    let name = torrent.name.unwrap_or("".to_string());
-                    data.name = name.clone();
-                    data.progress = progress;
-                    data.speed = speed;
-                    data.eta = eta;
-                    if latest_data.contains_key(&name) {
-                        let last_data: &DownloadData = latest_data.get(&name).unwrap();
+                    dbg!(&torrent);
+                    let name = torrent.name.unwrap();
+                    let progress = torrent.progress.unwrap();
+                    let speed = torrent.dlspeed.unwrap();
+                    let eta = torrent.eta.unwrap();
+                    let data = DownloadData::new(name.as_str(), progress, speed, eta);
+                    let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
+                    let callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                    dbg!(&status_map);
+                    dbg!(&callback_map);
+                    if status_map.contains_key(&name) {
+                        let last_data = status_map.get(&name).unwrap();
                         if last_data.progress != progress || last_data.eta != eta || last_data.speed != speed {
-                            latest_data.insert(name.clone(), data.clone());
-                            callback(data.clone());
-                        }
-                    } else {
-                        latest_data.insert(name.clone(), data.clone());
-                        callback(data.clone());
+                            status_map.insert(name.clone(), data.clone());
+                            if let Some(callback) = callback_map.get(&name) {
+                                dbg!("require callback");
+                                callback(std::ptr::null_mut(), data.clone());
+                            }
+                        }  
+                    } else if callback_map.contains_key(&name) {
+                        status_map.insert(name.clone(), data.clone());
+                        callback_map.get(&name).unwrap()(std::ptr::null_mut(), data.clone());
                     }
                 }
-                // drop inactive torrent
-                if times % 5 == 4 {
-                    let torrents = async_run! {
-                        client.get_torrent_list(GetTorrentListArg {
-                        filter: Some(TorrentFilter::Inactive),
-                        ..Default::default()
-                    }).await.unwrap()};
-                    for torrent in torrents {
-                        let name = torrent.name.unwrap_or("".to_string());
-                        if latest_data.contains_key(&name) {
-                            latest_data.remove(&name);
-                        }
-                    }
-                }
-                thread::sleep(std::time::Duration::from_secs(2));
             }
-        });
-
-    }
+            // check download request
+            let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();
+            for (name, download) in request_map.iter() {
+                log::info!("start to download: {}", name);
+                let result = async_run! {
+                    client.add_torrent(AddTorrentArg {
+                        source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
+                        savepath: if download.savepath == "default".to_string() { None } else { Some(download.savepath.to_string()) },
+                        rename: Some(download.rename.to_string()),
+                        ..Default::default()
+                    }).await
+                } as Result<(), qbit_rs::Error>;
+                if let Err(e) = result {
+                    log::warn!("cannot add torrent: {}", e);
+                }
+                let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                callback_map.insert(download.rename.clone(), download.func);
+            }
+            request_map.clear();
+            times += 1;
+            times %= 5;
+            thread::sleep(std::time::Duration::from_secs(1));
+        }
+    });
+    0
 }
 
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }
-
 #[no_mangle]
-pub fn apply() -> *mut dyn DownloadTools {
-    Box::into_raw(Box::new(QBtools {
-        client: None,
-        username: "".to_string(),
-        password: "".to_string(),
-        link: "".to_string(),
-    }))
+pub extern "C" fn download_by_link(url: *const c_char, savepath: *const c_char, rename: *const c_char, callback_fn: Callback) -> i32 {
+    let url = unsafe { CStr::from_ptr(url).to_str().unwrap().to_string() };
+    let savepath = unsafe { CStr::from_ptr(savepath).to_str().unwrap().to_string() };
+    let rename = unsafe { CStr::from_ptr(rename).to_str().unwrap().to_string() };
+    DOWNLOAD_REQUEST.lock().unwrap().insert(url.clone(), DownloadType {
+        url,
+        savepath,
+        rename,
+        func: callback_fn,
+    });
+    0
 }

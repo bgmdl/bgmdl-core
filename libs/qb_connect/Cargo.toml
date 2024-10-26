@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 "download_link" = { path = "../download_link" }
+dyn-clone = "1.0.17"
+lazy_static = "1.5.0"
+log = "0.4.22"
 qbit-rs = "0.4.3"
 tokio = "1.39.3"
 
