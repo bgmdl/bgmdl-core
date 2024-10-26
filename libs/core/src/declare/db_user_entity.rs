@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use sea_orm::entity::prelude::*;
 use sea_orm::{DeriveEntityModel, DeriveRelation, EnumIter};
 
