@@ -192,7 +192,6 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
 fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
     let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
     let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
-    let run_line = content.lines().find(|line| line.contains("pub fn run("))?;
     let command_name = router_line.trim_start_matches("//! router:").trim();
     let description = description_line.trim_start_matches("//! description:").trim();
     let args = content.lines().find(|line| line.starts_with("//! args:"));
@@ -216,6 +215,8 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
             }
         }
     }
+    let mut run_str = "".to_string();
+    let mut is_run_line = false;
     for line in content.lines() {
         if line.starts_with("//! --") {
             let option_def = line.trim_start_matches("//! ").trim();
@@ -239,11 +240,24 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
                 }
             }
         }
+        if line.contains("pub fn run(") {
+            is_run_line = true;
+        }
+        if is_run_line {
+            run_str.push_str(line);
+        }
+        if line.contains(")") {
+            is_run_line = false;
+        }
     }
-    let run_fn_signature = run_line
+    // run_fn only save illegal char
+    let run_str = run_str.chars().filter(|c| c.is_alphabetic() || "<>(){}^_',:0123456789".contains(*c)).collect::<String>();
+    // find run fun
+    let run_fn_signature = run_str
         .trim()
-        .trim_start_matches("pub fn run(")
-        .trim_end_matches(") {");
+        .trim_start_matches("pubfnrun(");
+    // then run find first ) and first }
+    let run_fn_signature = run_fn_signature.split(')').next().unwrap(); 
     let run_fn_args: Vec<&str> = run_fn_signature.split(',').collect();
     let run_fn_call = run_fn_args.iter().map(|arg| {
         let arg_name = arg.split(':').next().unwrap().trim();

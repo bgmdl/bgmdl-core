@@ -7,8 +7,14 @@
 //! --password -P <password>, password
 //! --config -c <config>, config file path(optional\, default: ~/.bgmdl/config.json)
 //! --port -p <port>, Init the server port(optional\, default: 1824)
+//! --download_username -D <download_username>, download username(optional if enable_download is false)
+//! --download_password -W <download_password>, download password(optional if enable_download is false)
+//! --download_url -L <download_url>, download url(optional if enable_download is false)
+//! --enable_download -E <enable_download>, enable download?
+//! --download_tool_path -T <download_tool_path>, download tool path(lib file) mac: .dylib\, linux: .so\, windows: .dll
 
 use std::{fs, path};
+use download_link::{DownloadFunc, StartFunc};
 use sha2::{Digest, Sha512};
 
 pub fn ask_input(hints: &str, default: &str) -> String {
@@ -21,8 +27,18 @@ pub fn ask_input(hints: &str, default: &str) -> String {
     }
 }
 
+pub fn ask_input_without_hint(hints: &str) -> String {
+    let result = inquire::Text::new(hints).prompt();
+    match result {
+        Ok(result) => result,
+        Err(err) => {
+            panic!("Error: {:?}", err);
+        },
+    }
+}
+
 pub fn ask_password(hints: &str) -> String {
-    let result = inquire::Password::new(hints).prompt();
+    let result = inquire::Password::new(hints).without_confirmation().prompt();
     match result {
         Ok(result) => result,
         Err(err) => {
@@ -41,7 +57,30 @@ pub fn ask_select(hints: &str, options: Vec<&str>) -> String {
     }
 }
 
-pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>, username: Option<String>, password: Option<String>, port: Option<u32>, config: Option<String>) {
+pub fn ask_yes(hints: &str) -> bool {
+    let result = inquire::Confirm::new(hints).prompt();
+    match result {
+        Ok(result) => result,
+        Err(err) => {
+            panic!("Error: {:?}", err);
+        },
+    }
+}
+
+pub fn run(
+    url: Option<String>, 
+    database: Option<String>, 
+    schema: Option<String>, 
+    username: Option<String>, 
+    password: Option<String>, 
+    port: Option<u32>, 
+    config: Option<String>,
+    download_username: Option<String>,
+    download_password: Option<String>,
+    download_url: Option<String>,
+    enable_download: Option<bool>,
+    download_tool_path: Option<String>
+) {
     let _ = port;
     let dbtype = database.unwrap_or(ask_select("Please choose database type", vec!["sqlite", "postgres"]));
     if dbtype != "postgres" && dbtype != "sqlite" {
@@ -79,6 +118,59 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
         return;
     }
     log::info!("Database initialized");
+    // check downloader.
+    let enable_download = enable_download.unwrap_or(ask_yes("Enable downloader?"));
+    let mut download_username = download_username;
+    let mut download_password = download_password;
+    let mut download_url = download_url;
+    let mut download_tool_path = download_tool_path;
+    if enable_download {
+        download_tool_path = if download_tool_path.is_none() {
+            let download_tool_type = ask_select("Please choose download connecter(tools) type", vec!["qbittorrent", "local_file"]);
+            if download_tool_type == "qbittorrent" {
+                // todo: download tool and auto add path.
+                Some("".to_string())
+            } else {
+                Some(ask_input_without_hint("Please input download tool path(mac: .dylib, linux: .so, win: .dll)"))
+            }   
+        } else {
+            download_tool_path
+        };
+        // check sign.
+        let lib_file = shellexpand::tilde( &download_tool_path.clone().unwrap()).to_string();
+        if !path::Path::new(&lib_file).exists() {
+            log::error!("Download tool path does not exist: {}", download_tool_path.clone().unwrap());
+            return;
+        }
+        // check libloading sign.
+        unsafe {
+            let lib = libloading::Library::new(lib_file);
+            let mut is_warn = false;
+            if lib.is_err() {
+                log::error!("Failed to load download tool library.");
+                is_warn = true;
+            } else {
+                let lib = lib.unwrap();
+                if lib.get::<StartFunc>(b"start").is_err() {
+                    log::error!("Cannot find significant sign: start");
+                    is_warn = true;
+                }
+                if lib.get::<DownloadFunc>(b"download_by_link").is_err() {
+                    log::error!("Cannot find significant sign: download_by_link");
+                    is_warn = true;
+                }
+            }
+            if is_warn {
+                log::error!("Notice This library may not be able to use. if you don't know why show this, please use default way download. or make issue on repo.");
+            } else {
+                log::info!("Download tool library check successful.");
+            }
+        }
+        download_username = Some(download_username.unwrap_or(ask_input("Please input download username", "admin")));
+        download_password = Some(download_password.unwrap_or(ask_password("Please input your downloader password")));
+        download_url = Some(download_url.unwrap_or(ask_input("Please input download url", "http://localhost:8080")));
+    }
+    let download_tool_path = download_tool_path.unwrap();
     let config_path = config.unwrap_or("~/.bgmdl/config.json".to_string()); //TODO: windows will not use this path.
     let config_path = path::PathBuf::from(shellexpand::tilde(&config_path).to_string());
     fs::create_dir_all(config_path.clone().parent().unwrap()).unwrap();
@@ -88,6 +180,13 @@ pub fn run(url: Option<String>, database: Option<String>, schema: Option<String>
             "schema": schema,
         },
         "port": port.unwrap_or(1824),
+        "download": {
+            "username": download_username.unwrap_or("".to_string()),
+            "password": download_password.unwrap_or("".to_string()),
+            "url": download_url.unwrap_or("".to_string()),
+            "tool_path": download_tool_path,
+            "enable": enable_download,
+        }
     };
     let data = fs::write(config_path, config.to_string());
     if data.is_err() {

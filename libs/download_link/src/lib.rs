@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -11,6 +11,10 @@ pub struct DownloadData {
 }
 
 unsafe impl Send for DownloadData {}
+
+pub type Callback = extern "C" fn(*mut c_void, data: DownloadData);
+pub type StartFunc = unsafe fn(link: *const c_char, username: *const c_char, password: *const c_char) -> i32;
+pub type DownloadFunc = unsafe fn(url: *const c_char, savepath: *const c_char, rename: *const c_char, callback: Callback) -> i32;
 
 impl DownloadData {
     pub fn new(name: &str, progress: f64, speed: i64, eta: i64) -> Self {

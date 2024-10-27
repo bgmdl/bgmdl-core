@@ -1,7 +1,7 @@
-use download_link::DownloadData;
+use download_link::{DownloadData, Callback};
 use qbit_rs::{model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource}, Qbit};
 use tokio::runtime;
-use std::{collections::HashMap, ffi::CStr, os::raw::{c_char, c_void}, thread};
+use std::{collections::HashMap, ffi::CStr, os::raw::c_char, thread};
 use lazy_static::lazy_static;
 use log;
 
@@ -16,8 +16,6 @@ macro_rules! async_run {
         })
     }};
 }
-
-type Callback = extern "C" fn(*mut c_void, DownloadData);
 
 struct DownloadType {
     url: String,

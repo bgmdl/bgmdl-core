@@ -2,6 +2,7 @@ pub mod error;
 pub mod parsetitle;
 pub mod regex;
 pub mod data;
+pub mod pluginload;
 
 
 #[macro_export]

@@ -36,6 +36,7 @@ pub struct TaskQueue {
     pub task_map: BinaryHeap<TaskMap>, // max in top
     pub task_list: HashMap<u32, TaskMap>,
     pub tasks: HashMap<u32, TaskDetail>, 
+    pub task_id: usize,
 }
 
 impl TaskQueue {
@@ -44,11 +45,12 @@ impl TaskQueue {
             task_map: BinaryHeap::new(),
             tasks: HashMap::new(),
             task_list: HashMap::new(),
+            task_id: 0
         }
     }
 
     pub fn push(&mut self, task: TaskDetail, priopity: i32) {
-        let taskid = self.tasks.len() as u32;
+        let taskid = self.task_id as u32;
         let item = TaskMap {
             status: "waiting".to_string(),
             priopity,
@@ -57,6 +59,7 @@ impl TaskQueue {
         self.task_map.push(item.clone());
         self.task_list.insert(taskid, item);
         self.tasks.insert(taskid, task);
+        self.task_id += 1;
     }
 
     pub fn exec_top_block(&mut self) -> Result<(), CoreError> {
@@ -102,6 +105,7 @@ impl TaskQueue {
         } else {
             log::warn!("task not found in task queue (server error).");
         }
+        
         Ok(())
     }
 
