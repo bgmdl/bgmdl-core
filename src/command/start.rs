@@ -44,9 +44,23 @@ pub struct ConfigJson {
 	pub port: Option<u16>,
 }
 
+macro_rules! get_env {
+    () => {
+        RUNENV.lock().unwrap().clone()
+    };
+    ($field:ident) => {{
+        let result = RUNENV.lock().unwrap().$field.clone();
+        String::from(result)
+    }};
+    ($field:ident $(. $subfields:ident)*) => {{
+        let result = RUNENV.lock().unwrap().$field$(.$subfields)*.clone();
+        String::from(result)
+    }};
+}
 
-pub fn run(config: Option<String>, port: Option<u16>) {
+pub fn run(config: Option<String>, port: Option<String>) {
     // load config file.
+    let port = port.map(|x| x.parse::<u16>().unwrap());
     let config = config.unwrap_or("~/.bgmdl/config.json".to_string());
     log::info!("Loading config file: {}", config);
     let config = shellexpand::tilde(&config).to_string();
@@ -64,7 +78,13 @@ pub fn run(config: Option<String>, port: Option<u16>) {
     RUNENV.lock().unwrap().dblink = config.database.clone().unwrap().url.unwrap_or("".to_string());
     RUNENV.lock().unwrap().dbschema = config.database.clone().unwrap().schema.unwrap_or("".to_string());
     // Start the core server
-    core::service::start(RUNENV.lock().unwrap().download.tool_path.clone().as_str());
+    log::info!("Env loaded: {:?}", get_env!());
+    core::service::start(
+        get_env!(download.tool_path).as_str(), 
+        get_env!(download.url).as_str(), 
+        get_env!(download.username).as_str(), 
+        get_env!(download.password).as_str(),
+    );
     // Start the server
     let _ = handle::main(port);
 }

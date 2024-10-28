@@ -36,7 +36,6 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
     let username = unsafe { CStr::from_ptr(username).to_str().unwrap().to_string() };
     let password = unsafe { CStr::from_ptr(password).to_str().unwrap().to_string() };
     thread::spawn(move || {
-        dbg!("start download thread");
         log::info!("start download thread successfully");
         let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
         let mut times = 0;
@@ -54,10 +53,9 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
                     thread::sleep(std::time::Duration::from_secs(5));
                     continue;
                 }
-                
+                let mut active_torrents = vec![];
                 let torrents = torrents.unwrap();
                 for torrent in torrents {
-                    dbg!(&torrent);
                     let name = torrent.name.unwrap();
                     let progress = torrent.progress.unwrap();
                     let speed = torrent.dlspeed.unwrap();
@@ -65,22 +63,24 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
                     let data = DownloadData::new(name.as_str(), progress, speed, eta);
                     let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
                     let callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
-                    dbg!(&status_map);
-                    dbg!(&callback_map);
                     if status_map.contains_key(&name) {
                         let last_data = status_map.get(&name).unwrap();
                         if last_data.progress != progress || last_data.eta != eta || last_data.speed != speed {
                             status_map.insert(name.clone(), data.clone());
                             if let Some(callback) = callback_map.get(&name) {
-                                dbg!("require callback");
                                 callback(std::ptr::null_mut(), data.clone());
                             }
-                        }  
+                        }
+                        active_torrents.push(name);
                     } else if callback_map.contains_key(&name) {
                         status_map.insert(name.clone(), data.clone());
                         callback_map.get(&name).unwrap()(std::ptr::null_mut(), data.clone());
                     }
                 }
+                let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
+                let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                status_map.retain(|k, _| active_torrents.contains(k));
+                callback_map.retain(|k, _| active_torrents.contains(k));
             }
             // check download request
             let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();

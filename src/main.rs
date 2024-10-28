@@ -49,6 +49,7 @@ fn main() {
     }
     Builder::new()
         .filter_module("sqlx::query", LevelFilter::Warn)
+        .filter_module("actix_server::server", LevelFilter::Warn)
         .parse_env("LOG_LEVEL")
         .init();
     execute_command();

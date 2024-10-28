@@ -14,8 +14,9 @@ lazy_static!{
     });
 }
 
-pub fn start(path: &str) {
+pub fn start(path: &str, link: &str, username: &str, password: &str) {
     *DOWNLOAD_PATH.lock().unwrap() = String::from(path);
     lazy_static::initialize(&DOWNLOAD_HANDLER);
+    DOWNLOAD_HANDLER.lock().unwrap().start(link, username, password);
     task::apply();
 }
