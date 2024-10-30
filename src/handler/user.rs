@@ -1,5 +1,4 @@
 use core::db::conn::get_connect;
-
 use actix_web::{post, services, web, Scope};
 use serde::Deserialize;
 
@@ -13,7 +12,7 @@ struct CheckLoginProps {
 
 #[post("/check")]
 pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<String> {
-    let db = get_connect("", ""); //TODO: get from global data.
+    let db = get_connect(get_env!(dblink).as_str(), get_env!(dbschema).as_str()); //TODO: get from global data.
     if db.is_err() {
         log::error!("Get database connection failed: {:?}", db.err().unwrap());
         return Ok(Json! {

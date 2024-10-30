@@ -7,8 +7,6 @@ use macro_lib::generate_commands;
 
 include!("./require.rs");
 include!("./default.rs");
-
-
 #[derive(Debug, Clone)]
 pub struct DEnv {
     pub enable: bool,
@@ -22,7 +20,8 @@ pub struct DEnv {
 pub struct Env {
     pub dblink: String,
     pub dbschema: String,
-    pub download: DEnv
+    pub download: DEnv,
+    pub port: u16,
 }
 
 lazy_static! {
@@ -35,7 +34,8 @@ lazy_static! {
             tool_path: String::from(""),
             url: String::from(""),
             username: String::from(""),
-        }
+        },
+        port: DEFAULT_PORT,
     });
 }
 pub static mut DBLINK: state::InitCell<String> = state::InitCell::new();

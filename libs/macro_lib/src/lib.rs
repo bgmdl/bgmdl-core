@@ -201,17 +201,56 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
         let args = args.trim_start_matches("//! args:").trim();
         let args = args.split_whitespace().collect::<Vec<&str>>();
         for arg in args {
-            if arg.starts_with('<') && arg.ends_with('>') {
+            if arg.starts_with('<') && (arg.ends_with('>') || arg.ends_with(')')) {
                 let arg = arg.trim_start_matches('<').trim_end_matches('>');
-                options.push(quote! {
-                    .arg(clap::Arg::new(#arg).required(true))
-                });
-                continue;
-            } else if arg.starts_with('[') && arg.ends_with(']') {
-                let arg = arg.trim_start_matches('[').trim_end_matches(']');
-                options.push(quote! {
-                    .arg(clap::Arg::new(#arg).required(false))
-                });
+                
+                //parse arg help.
+                //<abc:default_value>(help)
+                //parse default_value and arg.
+                let arg_help = arg.split('(').nth(1).unwrap_or("").trim_end_matches(')');
+                let arg = arg.split('(').collect::<Vec<&str>>()[0].trim_start_matches('<').trim_end_matches('>');
+                let arg = arg.split(':').collect::<Vec<&str>>();
+                if arg.len() == 1 {
+                    let arg_name = proc_macro2::Literal::string(arg[0]);
+                    let arg_help_literal = proc_macro2::Literal::string(arg_help);
+                    options.push(quote! {
+                        .arg(clap::Arg::new(#arg_name).required(true).help(#arg_help_literal))
+                    });
+                    continue;
+                } else if arg.len() == 2 {
+                    let default_value = arg[1];
+                    let arg_name = proc_macro2::Literal::string(arg[0]);
+                    let arg_help_literal = proc_macro2::Literal::string(arg_help);
+                    let default_value = proc_macro2::Literal::string(default_value);
+                    options.push(quote! {
+                        .arg(clap::Arg::new(#arg_name).required(true).default_value(#default_value).help(#arg_help_literal))
+                    });
+                    continue;
+                }
+            } else if arg.starts_with('[') && (arg.ends_with(']') || arg.ends_with(')')) {
+                let arg_help = arg.split('(').nth(1).unwrap_or("").trim_end_matches(')');
+                let arg = arg.split('(').collect::<Vec<&str>>()[0].trim_start_matches('[').trim_end_matches(']');
+                let arg = arg.split(':').collect::<Vec<&str>>();
+                if arg.len() == 1 {
+                    let arg_name = proc_macro2::Literal::string(arg[0]);
+                    let arg_help_literal = proc_macro2::Literal::string(arg_help);
+                    options.push(quote! {
+                        .arg(clap::Arg::new(#arg_name).required(false).help(#arg_help_literal))
+                    });
+                    continue;
+                } else if arg.len() == 2 {
+                    let default_value = arg[1];
+                    let arg_name = proc_macro2::Literal::string(arg[0]);
+                    let arg_help_literal = proc_macro2::Literal::string(arg_help);
+                    let default_value = proc_macro2::Literal::string(default_value);
+                    options.push(quote! {
+                        .arg(clap::Arg::new(#arg_name).required(false).default_value(#default_value).help(#arg_help_literal))
+                    });
+                    continue;
+                }
+                // options.push(quote! {
+                //     .arg(clap::Arg::new(#arg).required(false))
+                // });
             }
         }
     }

@@ -15,57 +15,9 @@
 
 use std::{fs, path};
 use download_link::{DownloadFunc, StartFunc};
-use sha2::{Digest, Sha512};
+use crate::utils::inquire::*;
 
-pub fn ask_input(hints: &str, default: &str) -> String {
-    let result = inquire::Text::new(hints).with_default(default).prompt();
-    match result {
-        Ok(result) => result,
-        Err(err) => {
-            panic!("Error: {:?}", err);
-        },
-    }
-}
-
-pub fn ask_input_without_hint(hints: &str) -> String {
-    let result = inquire::Text::new(hints).prompt();
-    match result {
-        Ok(result) => result,
-        Err(err) => {
-            panic!("Error: {:?}", err);
-        },
-    }
-}
-
-pub fn ask_password(hints: &str) -> String {
-    let result = inquire::Password::new(hints).without_confirmation().prompt();
-    match result {
-        Ok(result) => result,
-        Err(err) => {
-            panic!("Error: {:?}", err);
-        },
-    }
-}
-
-pub fn ask_select(hints: &str, options: Vec<&str>) -> String {
-    let result = inquire::Select::new(hints, options.clone()).prompt();
-    match result {
-        Ok(result) => result.to_string(),
-        Err(err) => {
-            panic!("Error: {:?}", err);
-        },
-    }
-}
-
-pub fn ask_yes(hints: &str) -> bool {
-    let result = inquire::Confirm::new(hints).prompt();
-    match result {
-        Ok(result) => result,
-        Err(err) => {
-            panic!("Error: {:?}", err);
-        },
-    }
-}
+use crate::utils::encryption::encode_password;
 
 pub fn run(
     url: Option<String>, 
@@ -109,7 +61,8 @@ pub fn run(
         "".to_string()
     };
     let username = username.unwrap_or(ask_input("Please input account username", "admin"));
-    let password = base16ct::lower::encode_string(&Sha512::digest(password.unwrap_or(ask_password("Please input account password"))));
+    let password = password.unwrap_or(ask_password("Please input account password"));
+    let password = encode_password(&password);
     log::info!("Initializing database on url: {}, schema: {}", url, schema);
     // Initialize the database
     let data = core::db::init::init(url.as_str(), schema.as_str(), username.as_str(), password.as_str());
