@@ -21,7 +21,6 @@ pub fn pub_handler(_input: TokenStream) -> TokenStream {
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     // mod_statements.push_str(&format!("mod {};\n", module_name));
                     service_calls.push(quote!{pub mod #mod_ident;});
-                    println!("Build module: {}", module_name);
                 }
             }
         }
@@ -50,14 +49,12 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     // mod_statements.push_str(&format!("mod {};\n", module_name));
                     service_calls.push(quote!{pub mod #mod_ident;});
-                    println!("Build module: {}", module_name);
                 }
             }
         } else if path.is_dir() {
             let dir_name = path.file_name().unwrap().to_str().unwrap();
             let mod_ident = syn::Ident::new(dir_name, proc_macro2::Span::call_site());
             service_calls.push(quote!{pub mod #mod_ident;});
-            println!("Build module: {}", dir_name);
         }
     }
     let expanded = quote! {
@@ -86,7 +83,6 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
                         continue;
                     }
                     handle_mod_statements = format!("{}\npub mod {};", handle_mod_statements, module_name);
-                    println!("Build module as service: {}", module_name);
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     service_calls.push(quote!{.service(handler::#mod_ident::service())});
                 }
@@ -154,7 +150,6 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
             if let Some((command, run_function)) = parse_command_and_run_from_file(&content, path.file_stem().unwrap().to_str().unwrap()) {
                 subcommands.push(command);
                 run_functions.push(run_function);
-                println!("Parsed file: {:?}", path);
             }
         }
     }
@@ -180,7 +175,7 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
             match matches.subcommand() {
                 #(#match_arms,)*
                 Some((_,_)) => {}
-                None => { println!("No subcommand provided") }
+                None => { log::warn!("Please use --help show help message.") }
             }
         }
     };

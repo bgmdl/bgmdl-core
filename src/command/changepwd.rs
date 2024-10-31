@@ -4,6 +4,7 @@
 //! args: [new_password](change_to_new_password)
 //! 
 use core::db::conn::get_connect;
+use core::model;
 
 use crate::utils::{config_load::env_load, inquire::*};
 
@@ -18,5 +19,5 @@ pub fn run(new_password: Option<String>, config: Option<String>) {
     }
     let db = db.unwrap();
     // change password.
-    let _ = core::user::change_password(&new_password, &db);
+    let _ = model::user::change_password(&new_password, &db);
 }

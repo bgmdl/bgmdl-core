@@ -1,4 +1,4 @@
-use core::db::conn::get_connect;
+use core::{db::conn::get_connect, model};
 use actix_web::{post, services, web, Scope};
 use serde::Deserialize;
 
@@ -20,7 +20,7 @@ pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<Stri
         });
     }
     let db = db.unwrap();
-    let result = core::user::check_user(&data.username, &data.password, &db);
+    let result = model::user::check_user(&data.username, &data.password, &db);
     if result.is_err() {
         log::error!("Check login failed: {:?}", result.err().unwrap());
         return Ok(Json! {

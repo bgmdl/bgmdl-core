@@ -1,8 +1,8 @@
 use sea_orm::QueryFilter;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, entity::*};
-use crate::declare::db_user_entity::Entity as UserEntity;
-use crate::declare::db_user_entity::Column as UserColumn;
-use crate::declare::db_user_entity::ActiveModel as UserModel;
+use crate::declare::db::entity::user::Entity as UserEntity;
+use crate::declare::db::entity::user::Column as UserColumn;
+use crate::declare::db::entity::user::ActiveModel as UserModel;
 use crate::declare::error::CoreError;
 
 pub fn change_password(new_password: &str, db: &DatabaseConnection) {
