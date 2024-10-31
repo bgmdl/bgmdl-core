@@ -18,6 +18,5 @@ pub fn run(new_password: Option<String>, config: Option<String>) {
     }
     let db = db.unwrap();
     // change password.
-    // 
     let _ = core::user::change_password(&new_password, &db);
 }
