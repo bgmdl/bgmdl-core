@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sea_orm::{ActiveModelTrait, ActiveValue, ConnectOptions, Database};
 use sea_orm_migration::prelude::*;
 
-use crate::declare::db::iden::{bgmdata, user};
+use crate::declare::db::iden;
 
 #[derive(DeriveMigrationName)]
 pub struct MigrationBgmData;
@@ -10,23 +10,48 @@ pub struct MigrationBgmData;
 #[async_trait]
 impl MigrationTrait for MigrationBgmData {
     async fn up(&self, manage: &SchemaManager) -> Result<(), DbErr> {
+        log::info!("Creating table bgmdata");
         manage.create_table(
             Table::create()
-                .table(bgmdata::BgmData::Table)
+                .table(iden::bgmdata::BgmData::Table)
                 .if_not_exists()
-                .col(ColumnDef::new(bgmdata::BgmData::Id).integer().not_null().primary_key())
-                .col(ColumnDef::new(bgmdata::BgmData::BgmId).integer().not_null())
-                .col(ColumnDef::new(bgmdata::BgmData::Status).string().not_null())
-                .col(ColumnDef::new(bgmdata::BgmData::BgmName).string().not_null())
+                .col(ColumnDef::new(iden::bgmdata::BgmData::Id).integer().not_null().primary_key())
+                .col(ColumnDef::new(iden::bgmdata::BgmData::BgmId).integer().not_null())
+                .col(ColumnDef::new(iden::bgmdata::BgmData::Status).string().not_null())
+                .col(ColumnDef::new(iden::bgmdata::BgmData::BgmName).string().not_null())
                 .to_owned()
         ).await?;
+        log::info!("Creating table user");
         manage.create_table(
             Table::create()
-                .table(user::User::Table)
+                .table(iden::user::User::Table)
                 .if_not_exists()
-                .col(ColumnDef::new(user::User::Id).integer().not_null().primary_key())
-                .col(ColumnDef::new(user::User::Name).string().not_null())
-                .col(ColumnDef::new(user::User::Password).string().not_null())
+                .col(ColumnDef::new(iden::user::User::Id).integer().not_null().primary_key())
+                .col(ColumnDef::new(iden::user::User::Name).string().not_null())
+                .col(ColumnDef::new(iden::user::User::Password).string().not_null())
+                .to_owned()
+        ).await?;
+        log::info!("Creating table task");
+        manage.create_table(
+            Table::create()
+                .table(iden::task::Task::Table)
+                .if_not_exists()
+                .col(ColumnDef::new(iden::task::Task::TId).integer().not_null().primary_key())
+                .col(ColumnDef::new(iden::task::Task::Name).string().not_null())
+                .col(ColumnDef::new(iden::task::Task::Status).string().not_null())
+                .col(ColumnDef::new(iden::task::Task::CreatedAt).date_time().not_null())
+                .to_owned()
+        ).await?;
+        log::info!("Creating table task_status");
+        manage.create_table(
+            Table::create()
+                .table(iden::task_status::TaskStatus::Table)
+                .if_not_exists()
+                .col(ColumnDef::new(iden::task_status::TaskStatus::TSId).integer().not_null().primary_key())
+                .col(ColumnDef::new(iden::task_status::TaskStatus::TId).integer().not_null())
+                .col(ColumnDef::new(iden::task_status::TaskStatus::Level).integer().not_null())
+                .col(ColumnDef::new(iden::task_status::TaskStatus::Content).string().not_null())
+                .col(ColumnDef::new(iden::task_status::TaskStatus::CreatedAt).date_time().not_null())
                 .to_owned()
         ).await?;
         Ok(())
@@ -35,13 +60,25 @@ impl MigrationTrait for MigrationBgmData {
     async fn down(&self, manage: &SchemaManager) -> Result<(), DbErr> {
         manage.drop_table(
             Table::drop()
-                .table(bgmdata::BgmData::Table)
+                .table(iden::bgmdata::BgmData::Table)
                 .if_exists()
                 .to_owned()
         ).await?;
         manage.drop_table(
             Table::drop()
-                .table(user::User::Table)
+                .table(iden::user::User::Table)
+                .if_exists()
+                .to_owned()
+        ).await?;
+        manage.drop_table(
+            Table::drop()
+                .table(iden::task::Task::Table)
+                .if_exists()
+                .to_owned()
+        ).await?;
+        manage.drop_table(
+            Table::drop()
+                .table(iden::task_status::TaskStatus::Table)
                 .if_exists()
                 .to_owned()
         ).await?;

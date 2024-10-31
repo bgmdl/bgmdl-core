@@ -10,4 +10,6 @@ pub enum Task {
     Name,
     #[sea_orm(iden = "status")]
     Status,
+    #[sea_orm(iden = "created_at")]
+    CreatedAt,
 }
