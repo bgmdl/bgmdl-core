@@ -1,4 +1,4 @@
-use core::{db::conn::get_connect, model};
+use core::{utils::db::conn::get_connect, model};
 use actix_web::{post, services, web, Scope};
 use serde::Deserialize;
 

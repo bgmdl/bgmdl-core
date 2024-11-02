@@ -2,8 +2,8 @@
 //! description: Change the password
 //! --config -c <config>, config path (optional\, ~/.bgmdl/config.json)
 //! args: [new_password](change_to_new_password)
-//! 
-use core::db::conn::get_connect;
+
+use core::utils::db::conn::get_connect;
 use core::model;
 
 use crate::utils::{config_load::env_load, inquire::*};

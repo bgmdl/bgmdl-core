@@ -20,12 +20,12 @@ use crate::utils::inquire::*;
 use crate::utils::encryption::encode_password;
 
 pub fn run(
-    url: Option<String>, 
-    database: Option<String>, 
-    schema: Option<String>, 
-    username: Option<String>, 
-    password: Option<String>, 
-    port: Option<u32>, 
+    url: Option<String>,
+    database: Option<String>,
+    schema: Option<String>,
+    username: Option<String>,
+    password: Option<String>,
+    port: Option<u32>,
     config: Option<String>,
     download_username: Option<String>,
     download_password: Option<String>,
@@ -65,7 +65,7 @@ pub fn run(
     let password = encode_password(&password);
     log::info!("Initializing database on url: {}, schema: {}", url, schema);
     // Initialize the database
-    let data = core::db::init::init(url.as_str(), schema.as_str(), username.as_str(), password.as_str());
+    let data = core::utils::db::init::init(url.as_str(), schema.as_str(), username.as_str(), password.as_str());
     if data.is_err() {
         log::error!("Error with database: {:?}", data.err());
         return;
