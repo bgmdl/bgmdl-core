@@ -5,7 +5,7 @@ use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 use std::fs;
 
-#[proc_macro]
+/* #[proc_macro]
 pub fn pub_handler(_input: TokenStream) -> TokenStream {
     let handlers_path = format!("src/handler");
     let mut service_calls = Vec::new();
@@ -63,6 +63,7 @@ pub fn pub_files(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+*/
 
 #[proc_macro]
 pub fn generate_services(_input: TokenStream) -> TokenStream {
@@ -73,7 +74,6 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
         .filter_map(|entry| entry.ok())
         .collect();
     sorted_entries.sort_by_key(|entry| entry.path());
-    let mut handle_mod_statements = include_str!("./default_handle.rs").to_string();
     for entry in sorted_entries {
         let path = entry.path();
         if path.is_file() {
@@ -82,14 +82,12 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
                     if module_name == "mod" {
                         continue;
                     }
-                    handle_mod_statements = format!("{}\npub mod {};", handle_mod_statements, module_name);
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
                     service_calls.push(quote!{.service(handler::#mod_ident::service())});
                 }
             }
         }
     }
-    fs::write("src/handler/mod.rs", handle_mod_statements).unwrap();
     let expanded = quote! {
         HttpServer::new(|| {
             App::new()
@@ -107,6 +105,7 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
 
 #[proc_macro_attribute]
 pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {

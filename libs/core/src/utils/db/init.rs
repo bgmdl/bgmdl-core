@@ -54,31 +54,50 @@ impl MigrationTrait for MigrationBgmData {
                 .col(ColumnDef::new(iden::task_status::TaskStatus::CreatedAt).date_time().not_null())
                 .to_owned()
         ).await?;
+        log::info!("Creating table count");
+        manage.create_table(
+            Table::create()
+                .table(iden::count::Count::Table)
+                .if_not_exists()
+                .col(ColumnDef::new(iden::count::Count::Key).string().not_null().primary_key())
+                .col(ColumnDef::new(iden::count::Count::Value).integer().not_null())
+                .to_owned()
+        ).await?;
         Ok(())
     }
 
     async fn down(&self, manage: &SchemaManager) -> Result<(), DbErr> {
+        log::warn!("Dropping table bgmdata");
         manage.drop_table(
             Table::drop()
                 .table(iden::bgmdata::BgmData::Table)
                 .if_exists()
                 .to_owned()
         ).await?;
+        log::warn!("Dropping table user");
         manage.drop_table(
             Table::drop()
                 .table(iden::user::User::Table)
                 .if_exists()
                 .to_owned()
         ).await?;
+        log::warn!("Dropping table task");
         manage.drop_table(
             Table::drop()
                 .table(iden::task::Task::Table)
                 .if_exists()
                 .to_owned()
         ).await?;
+        log::warn!("Dropping table task_status");
         manage.drop_table(
             Table::drop()
                 .table(iden::task_status::TaskStatus::Table)
+                .if_exists()
+                .to_owned()
+        ).await?;
+        manage.drop_table(
+            Table::drop()
+                .table(iden::count::Count::Table)
                 .if_exists()
                 .to_owned()
         ).await?;
@@ -119,5 +138,21 @@ pub fn init(url: &str, schema: &str, username: &str, hashed_password: &str) -> R
         };
         data.insert(&db).await
     }?;
+    log::info!("Account initialized");
+    log::info!("Init basic count");
+    async_run! {
+        use crate::declare::db::entity::count as Count;
+        let data = Count::ActiveModel {
+            key: ActiveValue::set("task".to_string()),
+            value: ActiveValue::set(0),
+        };
+        let _ = data.insert(&db).await;
+        let data = Count::ActiveModel {
+            key: ActiveValue::set("bgm".to_string()),
+            value: ActiveValue::set(0),
+        };
+        let _ = data.insert(&db).await;
+    };
+    log::info!("Basic count initialized");
     Ok(())
 }

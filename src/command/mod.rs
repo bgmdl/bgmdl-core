@@ -1,2 +1,3 @@
-use macro_lib::pub_files;
-pub_files!("command");
+pub mod init;
+pub mod start;
+pub mod changepwd;
