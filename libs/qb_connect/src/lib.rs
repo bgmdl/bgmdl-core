@@ -40,7 +40,7 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
         let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
         let mut times = 0;
         loop {
-            if times == 0 { // 5 second / update torrent status 
+            if times == 0 { // 5 second / update torrent status
                 // check client status.
                 let torrents = async_run! {
                     client.get_torrent_list(GetTorrentListArg {

@@ -197,7 +197,6 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
         for arg in args {
             if arg.starts_with('<') && (arg.ends_with('>') || arg.ends_with(')')) {
                 let arg = arg.trim_start_matches('<').trim_end_matches('>');
-                
                 //parse arg help.
                 //<abc:default_value>(help)
                 //parse default_value and arg.
