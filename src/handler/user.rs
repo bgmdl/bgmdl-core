@@ -1,18 +1,10 @@
-use core::{utils::db::conn::get_connect, model};
+use core::{model, utils::db::conn::get_connect};
 use actix_web::{post, services, web, Scope};
-use serde::Deserialize;
-
-use crate::handler::ResultHandler;
-
-#[derive(Deserialize, Debug, Clone)]
-struct CheckLoginProps {
-    username: String,
-    password: String, //hashed password
-}
+use crate::{declare::api::task::CheckLoginProps, handler::ResultHandler, utils::encryption::encode_password};
 
 #[post("/check")]
 pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<String> {
-    let db = get_connect(get_env!(dblink).as_str(), get_env!(dbschema).as_str()); //TODO: get from global data.
+    let db = get_connect(get_env!(dblink).as_str(), get_env!(dbschema).as_str()).await;
     if db.is_err() {
         log::error!("Get database connection failed: {:?}", db.err().unwrap());
         return Ok(Json! {
@@ -20,7 +12,8 @@ pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<Stri
         });
     }
     let db = db.unwrap();
-    let result = model::user::check_user(&data.username, &data.password, &db);
+    let password = encode_password(&data.password);
+    let result = model::user::check_user(&data.username, &password, &db).await;
     if result.is_err() {
         log::error!("Check login failed: {:?}", result.err().unwrap());
         return Ok(Json! {

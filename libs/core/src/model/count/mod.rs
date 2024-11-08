@@ -5,33 +5,27 @@ use crate::declare::db::entity::count::ActiveModel as CountActiveModel;
 use crate::declare::db::entity::count::Column as CountColumn;
 use crate::declare::error::CoreError;
 
-pub fn get_id(key: &str, db: &DatabaseConnection) -> Result<i32, CoreError> {
-    let count = async_run! {
-        CountEntity::find()
+pub async fn get_id(key: &str, db: &DatabaseConnection) -> Result<i32, CoreError> {
+    let count = CountEntity::find()
         .filter(CountColumn::Key.eq(key))
         .one(db)
-        .await
-    }?;
+        .await?;
     Ok(count.unwrap().value)
 }
 
-pub fn gen_id(key: &str, db: &DatabaseConnection) -> Result<i32, CoreError> {
-    let count = async_run! {
-        CountEntity::find()
+pub async fn gen_id(key: &str, db: &DatabaseConnection) -> Result<i32, CoreError> {
+    let count = CountEntity::find()
         .filter(CountColumn::Key.eq(key))
         .one(db)
-        .await
-    }?;
+        .await?;
     let count = count.unwrap();
     let new_count = count.value + 1;
-    async_run! {
-        CountEntity::update(CountActiveModel {
-            value: Set(new_count),
-            ..Default::default()
-        })
-        .filter(CountColumn::Key.eq(key))
-        .exec(db)
-        .await
-    }?;
+    CountEntity::update(CountActiveModel {
+        value: Set(new_count),
+        ..Default::default()
+    })
+    .filter(CountColumn::Key.eq(key))
+    .exec(db)
+    .await?;
     Ok(new_count)
 }

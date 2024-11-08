@@ -3,8 +3,18 @@ use std::{
     collections::{BinaryHeap, HashMap},
 };
 
+use serde::Deserialize;
+
 use crate::declare::error::CoreError;
 use super::run::{self, change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll, report_error::ReportError};
+
+#[derive(Deserialize, Debug, Clone)]
+pub enum TaskName {
+    Download,
+    DownloadAll,
+    ChangeName,
+    ReportError,
+}
 
 pub enum TaskDetail {
     Download(TaskDownload),

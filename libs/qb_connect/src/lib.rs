@@ -35,18 +35,17 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
     let link = unsafe { CStr::from_ptr(link).to_str().unwrap().to_string() };
     let username = unsafe { CStr::from_ptr(username).to_str().unwrap().to_string() };
     let password = unsafe { CStr::from_ptr(password).to_str().unwrap().to_string() };
-    thread::spawn(move || {
+    thread::spawn(move || { async_run! {
         log::info!("start download thread successfully");
         let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
         let mut times = 0;
         loop {
             if times == 0 { // 5 second / update torrent status
                 // check client status.
-                let torrents = async_run! {
-                    client.get_torrent_list(GetTorrentListArg {
+                let torrents = client.get_torrent_list(GetTorrentListArg {
                     filter: Some(TorrentFilter::Active),
                     ..Default::default()
-                }).await};
+                }).await;
                 if let Err(_) = torrents {
                     log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
                     client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
@@ -86,14 +85,12 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
             let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();
             for (name, download) in request_map.iter() {
                 log::info!("start to download: {}", name);
-                let result = async_run! {
-                    client.add_torrent(AddTorrentArg {
-                        source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
-                        savepath: if download.savepath == "default".to_string() { None } else { Some(download.savepath.to_string()) },
-                        rename: Some(download.rename.to_string()),
-                        ..Default::default()
-                    }).await
-                } as Result<(), qbit_rs::Error>;
+                let result = client.add_torrent(AddTorrentArg {
+                    source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
+                    savepath: if download.savepath == "default".to_string() { None } else { Some(download.savepath.to_string()) },
+                    rename: Some(download.rename.to_string()),
+                    ..Default::default()
+                }).await as Result<(), qbit_rs::Error>;
                 if let Err(e) = result {
                     log::warn!("cannot add torrent: {}", e);
                 }
@@ -105,7 +102,7 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
             times %= 5;
             thread::sleep(std::time::Duration::from_secs(1));
         }
-    });
+    }});
     0
 }
 

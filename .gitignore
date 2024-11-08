@@ -6,6 +6,7 @@
 Cargo.lock
 
 *.local
+*.local.rs
 config.json
 *.db
 config-*.json
