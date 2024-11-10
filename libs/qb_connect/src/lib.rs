@@ -29,6 +29,7 @@ pub extern "C" fn init_logger(param: LogParam) {
 
 struct DownloadType {
     url: String,
+    taskid: i32,
     save_path: String,
     rename: String,
     func: Callback,
@@ -40,6 +41,8 @@ lazy_static! {
     static ref DOWNLOAD_CALLBACK_TASKS: std::sync::Mutex<HashMap<String, Callback>> =
         std::sync::Mutex::new(HashMap::new());
     static ref DOWNLOAD_REQUEST: std::sync::Mutex<HashMap<String, DownloadType>> =
+        std::sync::Mutex::new(HashMap::new());
+    static ref TASKID_MAP: std::sync::Mutex<HashMap<String, i32>> =
         std::sync::Mutex::new(HashMap::new());
 }
 
@@ -87,31 +90,39 @@ pub extern "C" fn start(
                         let progress = torrent.progress.unwrap();
                         let speed = torrent.dlspeed.unwrap();
                         let eta = torrent.eta.unwrap();
-                        let data = DownloadData::new(name.as_str(), progress, speed, eta);
+                        let mut data = DownloadData::new(name.as_str(), progress, speed, eta, 0);
                         let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
                         let callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
                         if status_map.contains_key(&name) {
                             let last_data = status_map.get(&name).unwrap();
+                            active_torrents.push(name.clone());
                             if last_data.progress != progress || last_data.eta != eta || last_data.speed != speed {
                                 status_map.insert(name.clone(), data.clone());
                                 if let Some(callback) = callback_map.get(&name) {
+                                    let taskid_map = TASKID_MAP.lock().unwrap();
+                                    data.taskid = *taskid_map.get(&name).unwrap();
                                     callback(std::ptr::null_mut(), data.clone());
+                                    log::trace!("done callback");
                                 }
                             }
-                            active_torrents.push(name);
                         } else if callback_map.contains_key(&name) {
+                            active_torrents.push(name.clone());
                             status_map.insert(name.clone(), data.clone());
+                            data.taskid = *TASKID_MAP.lock().unwrap().get(&name).unwrap();
                             callback_map.get(&name).unwrap()(std::ptr::null_mut(), data.clone());
-                            active_torrents.push(name);
+                            log::trace!("done callback");
                         }
                     }
                     log::trace!("status_map: {:?}", DOWNLOAD_TASK_STATUS.lock().unwrap());
                     log::trace!("callback_map: {:?}", DOWNLOAD_CALLBACK_TASKS.lock().unwrap());
                     log::trace!("active_torrents: {:?}", active_torrents);
+                    log::trace!("taskid_map: {:?}", TASKID_MAP.lock().unwrap());
                     let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
                     let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                    let mut taskid_map = TASKID_MAP.lock().unwrap();
                     status_map.retain(|k, _| active_torrents.contains(k));
                     callback_map.retain(|k, _| active_torrents.contains(k));
+                    taskid_map.retain(|k, _| active_torrents.contains(k));
                 }
                 // check download request
                 let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();
@@ -128,6 +139,7 @@ pub extern "C" fn start(
                     }
                     let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
                     callback_map.insert(download.rename.clone(), download.func);
+                    TASKID_MAP.lock().unwrap().insert(download.rename.clone(), download.taskid);
                 }
                 request_map.clear();
                 times += 1;
@@ -141,6 +153,7 @@ pub extern "C" fn start(
 
 #[no_mangle]
 pub extern "C" fn download_by_link(
+    taskid: i32,
     url: *const c_char,
     save_path: *const c_char,
     rename: *const c_char,
@@ -152,6 +165,7 @@ pub extern "C" fn download_by_link(
     DOWNLOAD_REQUEST.lock().unwrap().insert(
         url.clone(),
         DownloadType {
+            taskid,
             url,
             save_path,
             rename,

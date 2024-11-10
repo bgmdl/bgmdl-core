@@ -13,7 +13,7 @@ pub enum StatusEnum {
 
 #[derive(DeriveIden)]
 pub enum TaskStatus {
-    #[sea_orm(iden = "task")]
+    #[sea_orm(iden = "task_status")]
     Table,
     #[sea_orm(iden = "tsid")]
     TSId,

@@ -30,6 +30,7 @@ impl DownloadHandler {
 
     pub fn download_by_link(
         &self,
+        taskid: i32,
         url: &str,
         save_path: &str,
         rename: &str,
@@ -40,6 +41,14 @@ impl DownloadHandler {
         let save_path = CString::new(save_path).unwrap();
         let rename = CString::new(rename).unwrap();
         let symbol: Symbol<DownloadFunc> = unsafe { self.lib.get(b"download_by_link").unwrap() };
-        unsafe { (symbol)(url.as_ptr(), save_path.as_ptr(), rename.as_ptr(), callback) }
+        unsafe {
+            (symbol)(
+                taskid,
+                url.as_ptr(),
+                save_path.as_ptr(),
+                rename.as_ptr(),
+                callback,
+            )
+        }
     }
 }

@@ -1,6 +1,9 @@
+use download_link::Callback;
 use lazy_static::lazy_static;
 use model::{TaskDetail, TaskQueue};
 use std::{sync::Mutex, thread};
+
+use crate::service::DOWNLOAD_CALLBACK_FUNC;
 
 pub mod model;
 pub mod run;
@@ -17,8 +20,9 @@ pub fn add_task(task: TaskDetail, priority: i32) {
 }
 
 #[allow(clippy::await_holding_lock)]
-pub fn apply() {
+pub fn apply(callback: Callback) {
     thread::spawn(move || {
+        *DOWNLOAD_CALLBACK_FUNC.lock().unwrap() = Box::new(callback);
         async_run! {
             log::info!("task thread start");
             loop {

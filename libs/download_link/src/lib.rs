@@ -6,6 +6,7 @@ use std::os::raw::{c_char, c_void};
 pub struct DownloadData {
     pub name: *const c_char,
     pub progress: f64,
+    pub taskid: i32,
     pub speed: i64,
     pub eta: i64,
 }
@@ -88,6 +89,7 @@ pub type Callback = extern "C" fn(*mut c_void, data: DownloadData);
 pub type StartFunc =
     unsafe fn(link: *const c_char, username: *const c_char, password: *const c_char) -> i32;
 pub type DownloadFunc = unsafe fn(
+    taskid: i32,
     url: *const c_char,
     save_path: *const c_char,
     rename: *const c_char,
@@ -95,12 +97,13 @@ pub type DownloadFunc = unsafe fn(
 ) -> i32;
 
 impl DownloadData {
-    pub fn new(name: &str, progress: f64, speed: i64, eta: i64) -> Self {
+    pub fn new(name: &str, progress: f64, speed: i64, eta: i64, taskid: i32) -> Self {
         DownloadData {
             name: CString::new(name).unwrap().into_raw(),
             progress,
             speed,
             eta,
+            taskid,
         }
     }
 }

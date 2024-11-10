@@ -1,5 +1,6 @@
 #[derive(Debug, Clone)]
 pub struct ReportError {
+    pub taskid: i32,
     pub error: String,
 }
 

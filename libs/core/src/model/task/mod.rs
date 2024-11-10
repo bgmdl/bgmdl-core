@@ -24,32 +24,33 @@ pub async fn add_task(
     let tid = gen_id("task", db).await?;
     log::trace!("Add task: {:?}", tid);
     log::trace!("task detail: {:?}", &task);
-    let res = TaskEntity::insert(TaskActiveModel {
+    TaskEntity::insert(TaskActiveModel {
         ..(TaskModel { ..(&task).into() }
             .set_tid(tid)
             .set_created_at(now_time!()))
         .into()
     })
     .exec(db)
-    .await;
-    dbg!(&res);
+    .await?;
+    let task = task.set_tid(tid);
+    dbg!(&task);
     task::add_task(task, default.unwrap_or(1));
     Ok(TaskAddResult { id: tid })
 }
 
 pub async fn add_task_progress(
     task_id: i32,
-    progress: i32,
-    speed: i32,
+    progress: f64,
+    speed: i64,
     db: &DatabaseConnection,
 ) -> Result<(), CoreError> {
     let tsid = gen_id("task_status", db).await?;
     log::trace!("Add task_status(for tid:{:?}) tsid:{:?}", task_id, tsid);
-    TaskStatusEntity::insert( TaskStatusActiveModel {
+    TaskStatusEntity::insert(TaskStatusActiveModel {
         tsid: Set(tsid),
         tid: Set(task_id),
-        level: Set(0),
-        content: Set(format!("{}, {}", progress, speed)),
+        level: Set(-1),
+        content: Set(format!("progress: {}, {}", progress, speed)),
         created_at: Set(now_time!()),
     })
     .exec(db)

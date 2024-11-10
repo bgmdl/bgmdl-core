@@ -27,6 +27,57 @@ pub enum TaskDetail {
     ReportError(ReportError),
 }
 
+impl From<TaskDownload> for TaskDetail {
+    fn from(task: TaskDownload) -> Self {
+        TaskDetail::Download(task)
+    }
+}
+
+impl From<TaskDownloadAll> for TaskDetail {
+    fn from(task: TaskDownloadAll) -> Self {
+        TaskDetail::DownloadAll(task)
+    }
+}
+
+impl From<ChangeName> for TaskDetail {
+    fn from(task: ChangeName) -> Self {
+        TaskDetail::ChangeName(task)
+    }
+}
+
+impl From<ReportError> for TaskDetail {
+    fn from(task: ReportError) -> Self {
+        TaskDetail::ReportError(task)
+    }
+}
+
+impl TaskDetail {
+    pub fn set_tid(self, tid: i32) -> TaskDetail {
+        match self {
+            TaskDetail::Download(task) => TaskDownload {
+                taskid: tid,
+                ..task
+            }
+            .into(),
+            TaskDetail::DownloadAll(task) => TaskDownloadAll {
+                taskid: tid,
+                ..task
+            }
+            .into(),
+            TaskDetail::ChangeName(task) => ChangeName {
+                taskid: tid,
+                ..task
+            }
+            .into(),
+            TaskDetail::ReportError(task) => ReportError {
+                taskid: tid,
+                ..task
+            }
+            .into(),
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct TaskMap {
     pub status: String,

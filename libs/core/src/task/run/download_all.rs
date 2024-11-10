@@ -2,6 +2,7 @@
 
 #[derive(Debug, Clone)]
 pub struct TaskDownloadAll {
+    pub taskid: i32,
     pub url: String,
     pub save_path: String,
 }
