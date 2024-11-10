@@ -19,6 +19,7 @@ use crate::utils::inquire::*;
 
 use crate::utils::encryption::encode_password;
 
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     url: Option<String>,
     database: Option<String>,
@@ -141,7 +142,7 @@ pub fn run(
             "enable": enable_download,
         }
     };
-    let data = fs::write(config_path, config.to_string());
+    let data = fs::write(config_path, &config);
     if data.is_err() {
         log::error!("Error with config file: {:?}", data.err());
         return;

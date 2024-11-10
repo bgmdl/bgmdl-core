@@ -25,21 +25,19 @@ pub fn parse(title: &String) -> ParserTitleResult {
     let regex_special_without_tag = r"(OVA|SP|OAD|SP)( ?([0-9]{1,2})| )";
     let regex_special_with_tag = r"\[(OVA|SP|OAD|SP)\]([\s\S]*([0-9]{1,2})| )";
     let regex_single = [
-        r"S\d+E(\d+)",     
-        r"E(\d+)",         
-        r"\b0(\d)\b", 
+        r"S\d+E(\d+)",
+        r"E(\d+)",
+        r"\b0(\d)\b",
         r"\b(\d{2})\b",
     ];
 
     let mut result = ParserTitleResult {
-        fansub: if let Some(fansub) = regex_get(&regex_fansub_first, &title.clone(), 1) {
-            String::from(fansub)
+        fansub: if let Some(fansub) = regex_get(regex_fansub_first, &title.clone(), 1) {
+            fansub
+        } else if let Some(fansub) = regex_get(regex_fansub_second, &title.clone(), 1) {
+            fansub
         } else {
-            if let Some(fansub) = regex_get(&regex_fansub_second, &title.clone(), 1) {
-                String::from(fansub)
-            } else {
-                "".to_string()
-            }
+            "".to_string()
         },
         is_number_ep: true,
         ep: 0,
@@ -57,13 +55,13 @@ pub fn parse(title: &String) -> ParserTitleResult {
         start_ep: 0,
         end_ep: 0
     };
-    let re = Regex::new(&regex_multi_ep).unwrap();
+    let re = Regex::new(regex_multi_ep).unwrap();
     if let Some(caps) = re.captures(&title.clone()) {
         result.is_multi_ep = true;
         result.start_ep = caps.get(1).unwrap().as_str().parse::<u32>().unwrap_or(0);
         result.end_ep = caps.get(4).unwrap_or(caps.get(5).unwrap_or(caps.get(6).unwrap_or(caps.get(3).unwrap()))).as_str().parse::<u32>().unwrap_or(0);
     }
-    let re = Regex::new(&regex_special_without_tag).unwrap();
+    let re = Regex::new(regex_special_without_tag).unwrap();
     if let Some(caps) = re.captures(&title.clone()) {
         result.is_number_ep = false;
         result.ep = -1;
@@ -72,7 +70,7 @@ pub fn parse(title: &String) -> ParserTitleResult {
             result.ep = ep.as_str().parse::<i32>().unwrap();
         }
     } else {
-        let re = Regex::new(&regex_special_with_tag).unwrap();
+        let re = Regex::new(regex_special_with_tag).unwrap();
         if let Some(caps) = re.captures(&title.clone()) {
             result.is_number_ep = false;
             result.ep = -1;

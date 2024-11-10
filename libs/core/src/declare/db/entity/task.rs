@@ -16,21 +16,21 @@ pub struct Model {
 impl Model {
     pub fn set_status(self, status: StatusEnum) -> Self {
         Self {
-            status: status,
+            status,
             ..self
         }
     }
 
-    pub fn set_created_at(self, time: DateTime) -> Self {
+    pub fn set_created_at(self, created_at: DateTime) -> Self {
         Self {
-            created_at: time,
+            created_at,
             ..self
         }
     }
 
     pub fn set_tid(self, tid: i32) -> Self {
         Self {
-            tid: tid,
+            tid,
             ..self
         }
     }

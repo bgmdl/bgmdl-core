@@ -22,8 +22,7 @@ pub async fn gen_id(key: &str, db: &DatabaseConnection) -> Result<i32, CoreError
     let new_count = count.value + 1;
     CountEntity::update(CountActiveModel {
         value: Set(new_count),
-        key: Set(key.to_string()),
-        ..Default::default()
+        key: Set(key.to_string())
     })
     .filter(CountColumn::Key.eq(key))
     .exec(db)

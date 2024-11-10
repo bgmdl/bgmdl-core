@@ -21,7 +21,7 @@ pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<Stri
         });
     }
     let result = result.unwrap();
-    if result == true {
+    if result {
         Ok(Json! {
             "result": "success",
             "_pwd": password

@@ -1,9 +1,11 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+#![allow(clippy::await_holding_lock)]
+
 use download_link::{init, Callback, DownloadData, LogParam};
 use qbit_rs::{model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource}, Qbit};
 use tokio::runtime;
 use std::{collections::HashMap, ffi::CStr, os::raw::c_char, thread};
 use lazy_static::lazy_static;
-use log;
 
 macro_rules! async_run {
     ($($body:tt)*) => {{
@@ -35,11 +37,12 @@ lazy_static! {
     static ref DOWNLOAD_REQUEST: std::sync::Mutex<HashMap<String, DownloadType>> = std::sync::Mutex::new(HashMap::new());
 }
 
+
 #[no_mangle]
 pub extern "C" fn start(link: *const c_char, username: *const c_char, password: *const c_char) -> i32 {
-    let link = unsafe { CStr::from_ptr(link).to_str().unwrap().to_string() };
-    let username = unsafe { CStr::from_ptr(username).to_str().unwrap().to_string() };
-    let password = unsafe { CStr::from_ptr(password).to_str().unwrap().to_string() };
+    let link = unsafe {CStr::from_ptr(link)}.to_str().unwrap().to_string() ;
+    let username = unsafe {CStr::from_ptr(username)}.to_str().unwrap().to_string() ;
+    let password = unsafe {CStr::from_ptr(password)}.to_str().unwrap().to_string() ;
     thread::spawn(move || { async_run! {
         log::info!("start download thread successfully");
         let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
@@ -51,7 +54,7 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
                     filter: Some(TorrentFilter::Active),
                     ..Default::default()
                 }).await;
-                if let Err(_) = torrents {
+                if torrents.is_err() {
                     log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
                     client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
                     thread::sleep(std::time::Duration::from_secs(5));
@@ -92,7 +95,7 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
                 log::info!("start to download: {}", name);
                 let result = client.add_torrent(AddTorrentArg {
                     source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
-                    save_path: if download.save_path == "default".to_string() { None } else { Some(download.save_path.to_string()) },
+                    savepath: if download.save_path == *"default" { None } else { Some(download.save_path.to_string()) },
                     rename: Some(download.rename.to_string()),
                     ..Default::default()
                 }).await as Result<(), qbit_rs::Error>;

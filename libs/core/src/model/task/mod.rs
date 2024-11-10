@@ -27,7 +27,7 @@ pub async fn add_task(task: TaskDetail, db: &DatabaseConnection, default: Option
     .await;
     dbg!(&res);
     log::info!("Add task: {:?}", tid);
-    let _ = task::add_task(task, default.unwrap_or(1));
+    task::add_task(task, default.unwrap_or(1));
     Ok(TaskAddResult {
         id: tid,
     })

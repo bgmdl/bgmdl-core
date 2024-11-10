@@ -16,6 +16,7 @@ pub fn add_task(task: TaskDetail, priority: i32) {
     task_queue.push(task, priority);
 }
 
+#[allow(clippy::await_holding_lock)]
 pub fn apply() {
     thread::spawn(move || { async_run! {
         log::info!("task thread start");

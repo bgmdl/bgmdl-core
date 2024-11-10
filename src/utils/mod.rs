@@ -17,14 +17,14 @@ macro_rules! Json {
 #[macro_export]
 macro_rules! get_env {
     () => {
-        crate::RUNENV.lock().unwrap().clone()
+        $crate::RUNENV.lock().unwrap().clone()
     };
     ($field:ident) => {{
-        let result = crate::RUNENV.lock().unwrap().$field.clone();
+        let result = $crate::RUNENV.lock().unwrap().$field.clone();
         result
     }};
     ($field:ident $(. $subfields:ident)*) => {{
-        let result = crate::RUNENV.lock().unwrap().$field$(.$subfields)*.clone();
+        let result = $crate::RUNENV.lock().unwrap().$field$(.$subfields)*.clone();
         result
     }};
 }

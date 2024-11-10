@@ -27,13 +27,12 @@ pub struct SearchResult {
 }
 
 //search by name list, get fansubs data.
-pub async fn search_by_namelist(name_list: &Vec<String>) -> SearchResult {
+pub async fn search_by_namelist(name_list: &[String]) -> SearchResult {
     let mut fansub_list = vec![];
     let mut fansub_map: HashMap<String, u32> = HashMap::new();
     let mut fansub_info: HashMap<String, FanSubInfo> = HashMap::new();
-    let name_list = &name_list[..];
     for name in name_list {
-        let result = query_on_nyaa(&name).await;
+        let result = query_on_nyaa(name).await;
         for torrent in result {
             let data = parsetitle::parse(&torrent.title);
             if fansub_map.contains_key(&data.fansub) {
@@ -97,7 +96,7 @@ mod test {
         let result = async_run! {
             query_on_nyaa(&"Senpai wa Otokonoko".to_string()).await
         };
-        assert!(result.len() > 0);
+        assert!(!result.is_empty());
     }
 
     #[test]
@@ -106,7 +105,6 @@ mod test {
         async_run!{
             search_by_namelist(&name_list).await
         };
-        assert!(true);
     }
 
     #[test]
@@ -116,6 +114,6 @@ mod test {
         let result = async_run! {
             search_by_fansub_with_name(&fansub, &name).await
         };
-        assert!(result.len() > 0);
+        assert!(!result.is_empty());
     }
 }

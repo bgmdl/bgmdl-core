@@ -50,6 +50,12 @@ pub struct TaskQueue {
     pub task_id: usize,
 }
 
+impl Default for TaskQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskQueue {
     pub fn new() -> Self {
         TaskQueue {
@@ -123,7 +129,7 @@ impl TaskQueue {
         Ok(())
     }
 
-    pub fn drop(&mut self) {
+    pub fn drop_task(&mut self) {
         self.tasks.retain(|taskid, _task| {
             // check task status
             let item = self.task_list.get(taskid);
@@ -141,13 +147,13 @@ impl TaskQueue {
             if item.is_none() {
                 return false;
             }
-            if self.tasks.get(&task.taskid).is_none() {
+            if !self.tasks.contains_key(&task.taskid) {
                 return false;
             }
             true
         });
         self.task_list.retain(|taskid, _item| {
-            if self.tasks.get(taskid).is_none() {
+            if !self.tasks.contains_key(taskid) {
                 return false;
             }
             true

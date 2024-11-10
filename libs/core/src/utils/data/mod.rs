@@ -8,7 +8,7 @@ pub fn exist(path: &str) -> bool {
 pub fn init(path: &str) -> std::io::Result<()> {
     let path = Path::new(path);
     if !path.exists() {
-        let _ = fs::create_dir_all(path)?;
+        fs::create_dir_all(path)?;
         fs::write(path.join("config.json"), "{}")
     } else {
         Ok(())
