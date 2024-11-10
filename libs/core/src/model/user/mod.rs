@@ -1,9 +1,9 @@
-use sea_orm::QueryFilter;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, entity::*};
-use crate::declare::db::entity::user::Entity as UserEntity;
-use crate::declare::db::entity::user::Column as UserColumn;
 use crate::declare::db::entity::user::ActiveModel as UserActiveModel;
+use crate::declare::db::entity::user::Column as UserColumn;
+use crate::declare::db::entity::user::Entity as UserEntity;
 use crate::declare::error::CoreError;
+use sea_orm::QueryFilter;
+use sea_orm::{entity::*, ColumnTrait, DatabaseConnection, EntityTrait};
 
 pub async fn change_password(new_password: &str, db: &DatabaseConnection) {
     let _ = UserEntity::update(UserActiveModel {
@@ -12,10 +12,15 @@ pub async fn change_password(new_password: &str, db: &DatabaseConnection) {
         ..Default::default()
     })
     .filter(UserColumn::Id.eq(1))
-    .exec(db).await;
+    .exec(db)
+    .await;
 }
 
-pub async fn check_user(username: &str, password: &str, db: &DatabaseConnection) -> Result<bool, CoreError> {
+pub async fn check_user(
+    username: &str,
+    password: &str,
+    db: &DatabaseConnection,
+) -> Result<bool, CoreError> {
     let user = UserEntity::find()
         .filter(UserColumn::Name.eq(username))
         .one(db)

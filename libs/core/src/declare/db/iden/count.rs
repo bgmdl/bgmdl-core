@@ -7,5 +7,5 @@ pub enum Count {
     #[sea_orm(iden = "key")]
     Key,
     #[sea_orm(iden = "value")]
-    Value
+    Value,
 }

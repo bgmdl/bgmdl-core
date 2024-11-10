@@ -2,8 +2,8 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemFn};
 use std::fs;
+use syn::{parse_macro_input, ItemFn};
 
 /* #[proc_macro]
 pub fn pub_handler(_input: TokenStream) -> TokenStream {
@@ -70,9 +70,7 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
     let handlers_path = "src/handler";
     let mut service_calls = Vec::new();
     let data = fs::read_dir(handlers_path).unwrap();
-    let mut sorted_entries: Vec<_> = data
-        .filter_map(|entry| entry.ok())
-        .collect();
+    let mut sorted_entries: Vec<_> = data.filter_map(|entry| entry.ok()).collect();
     sorted_entries.sort_by_key(|entry| entry.path());
     for entry in sorted_entries {
         let path = entry.path();
@@ -83,7 +81,7 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
                         continue;
                     }
                     let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
-                    service_calls.push(quote!{.service(handler::#mod_ident::service())});
+                    service_calls.push(quote! {.service(handler::#mod_ident::service())});
                 }
             }
         }
@@ -105,7 +103,6 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-
 
 #[proc_macro_attribute]
 pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -144,9 +141,15 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     for entry in fs::read_dir(command_dir).expect("Failed to read command directory") {
         let entry = entry.expect("Failed to read entry");
         let path = entry.path();
-        if path.is_file() && path.extension().unwrap_or_default() == "rs" && path.file_name() != Some("mod.rs".as_ref()) {
+        if path.is_file()
+            && path.extension().unwrap_or_default() == "rs"
+            && path.file_name() != Some("mod.rs".as_ref())
+        {
             let content = fs::read_to_string(&path).expect("Failed to read file");
-            if let Some((command, run_function)) = parse_command_and_run_from_file(&content, path.file_stem().unwrap().to_str().unwrap()) {
+            if let Some((command, run_function)) = parse_command_and_run_from_file(
+                &content,
+                path.file_stem().unwrap().to_str().unwrap(),
+            ) {
                 subcommands.push(command);
                 run_functions.push(run_function);
             }
@@ -157,13 +160,15 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
             .subcommand(#cmd)
         }
     });
-    let match_arms = run_functions.into_iter().map(|(cmd_name, run_function_call)| {
-        quote! {
-            Some((#cmd_name, sub_m)) => {
-                #run_function_call
+    let match_arms = run_functions
+        .into_iter()
+        .map(|(cmd_name, run_function_call)| {
+            quote! {
+                Some((#cmd_name, sub_m)) => {
+                    #run_function_call
+                }
             }
-        }
-    });
+        });
     let expanded = quote! {
         pub fn build_cli() -> clap::Command {
             clap::Command::new("bangumidownload")
@@ -182,12 +187,23 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-
-fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_macro2::TokenStream, (proc_macro2::TokenStream, proc_macro2::TokenStream))> {
-    let router_line = content.lines().find(|line| line.starts_with("//! router:"))?;
-    let description_line = content.lines().find(|line| line.starts_with("//! description:"))?;
+fn parse_command_and_run_from_file(
+    content: &str,
+    path: &str,
+) -> Option<(
+    proc_macro2::TokenStream,
+    (proc_macro2::TokenStream, proc_macro2::TokenStream),
+)> {
+    let router_line = content
+        .lines()
+        .find(|line| line.starts_with("//! router:"))?;
+    let description_line = content
+        .lines()
+        .find(|line| line.starts_with("//! description:"))?;
     let command_name = router_line.trim_start_matches("//! router:").trim();
-    let description = description_line.trim_start_matches("//! description:").trim();
+    let description = description_line
+        .trim_start_matches("//! description:")
+        .trim();
     let args = content.lines().find(|line| line.starts_with("//! args:"));
     let mut options = Vec::new();
     // handle args.
@@ -201,7 +217,9 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
                 //<abc:default_value>(help)
                 //parse default_value and arg.
                 let arg_help = arg.split('(').nth(1).unwrap_or("").trim_end_matches(')');
-                let arg = arg.split('(').collect::<Vec<&str>>()[0].trim_start_matches('<').trim_end_matches('>');
+                let arg = arg.split('(').collect::<Vec<&str>>()[0]
+                    .trim_start_matches('<')
+                    .trim_end_matches('>');
                 let arg = arg.split(':').collect::<Vec<&str>>();
                 if arg.len() == 1 {
                     let arg_name = proc_macro2::Literal::string(arg[0]);
@@ -222,7 +240,9 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
                 }
             } else if arg.starts_with('[') && (arg.ends_with(']') || arg.ends_with(')')) {
                 let arg_help = arg.split('(').nth(1).unwrap_or("").trim_end_matches(')');
-                let arg = arg.split('(').collect::<Vec<&str>>()[0].trim_start_matches('[').trim_end_matches(']');
+                let arg = arg.split('(').collect::<Vec<&str>>()[0]
+                    .trim_start_matches('[')
+                    .trim_end_matches(']');
                 let arg = arg.split(':').collect::<Vec<&str>>();
                 if arg.len() == 1 {
                     let arg_name = proc_macro2::Literal::string(arg[0]);
@@ -283,20 +303,21 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
         }
     }
     // run_fn only save illegal char
-    let run_str = run_str.chars().filter(|c| c.is_alphabetic() || "<>(){}^_',:0123456789".contains(*c)).collect::<String>();
+    let run_str = run_str
+        .chars()
+        .filter(|c| c.is_alphabetic() || "<>(){}^_',:0123456789".contains(*c))
+        .collect::<String>();
     // find run fun
-    let run_fn_signature = run_str
-        .trim()
-        .trim_start_matches("pubfnrun(");
+    let run_fn_signature = run_str.trim().trim_start_matches("pubfnrun(");
     // then run find first ) and first }
-    let run_fn_signature = run_fn_signature.split(')').next().unwrap(); 
+    let run_fn_signature = run_fn_signature.split(')').next().unwrap();
     let run_fn_args: Vec<&str> = run_fn_signature.split(',').collect();
     let run_fn_call = run_fn_args.iter().map(|arg| {
         let arg_name = arg.split(':').next().unwrap().trim();
         let type_d = arg.split(':').nth(1).unwrap().trim();
         if type_d.starts_with("Option<") {
             let type_d_inner = type_d.trim_start_matches("Option<");
-            let type_d_inner = type_d_inner[..type_d_inner.len()-1].to_string();
+            let type_d_inner = type_d_inner[..type_d_inner.len() - 1].to_string();
             let type_d_ident = syn::parse_str::<syn::Type>(type_d_inner.as_str()).unwrap();
             quote! { { let _res = sub_m.get_one::<#type_d_ident>(#arg_name); if _res == None {
                 None
@@ -305,9 +326,8 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
             } } }
         } else {
             let type_d_ident = syn::Ident::new(type_d, proc_macro2::Span::call_site());
-            quote! { sub_m.get_one::<#type_d_ident>(#arg_name).unwrap().clone() }   
-        }  
-
+            quote! { sub_m.get_one::<#type_d_ident>(#arg_name).unwrap().clone() }
+        }
     });
     let func_ident = syn::Ident::new(path, proc_macro2::Span::call_site());
     Some((
@@ -318,10 +338,10 @@ fn parse_command_and_run_from_file(content: &str, path: &str) -> Option<(proc_ma
         },
         (
             quote! { #command_name },
-            quote! { 
-                
-                command::#func_ident::run(#(#run_fn_call),*); 
-            }
+            quote! {
+
+                command::#func_ident::run(#(#run_fn_call),*);
+            },
         ),
     ))
 }

@@ -1,7 +1,7 @@
-use sea_orm::entity::prelude::*;
-use sea_orm::{DeriveEntityModel, DeriveRelation, EnumIter};
 use crate::declare::db::iden::task_status::StatusEnum;
 use crate::task::model::TaskDetail;
+use sea_orm::entity::prelude::*;
+use sea_orm::{DeriveEntityModel, DeriveRelation, EnumIter};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "task")]
@@ -15,24 +15,15 @@ pub struct Model {
 }
 impl Model {
     pub fn set_status(self, status: StatusEnum) -> Self {
-        Self {
-            status,
-            ..self
-        }
+        Self { status, ..self }
     }
 
     pub fn set_created_at(self, created_at: DateTime) -> Self {
-        Self {
-            created_at,
-            ..self
-        }
+        Self { created_at, ..self }
     }
 
     pub fn set_tid(self, tid: i32) -> Self {
-        Self {
-            tid,
-            ..self
-        }
+        Self { tid, ..self }
     }
 }
 
@@ -85,5 +76,4 @@ impl From<&TaskDetail> for Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
 
-impl ActiveModelBehavior for ActiveModel {
-}
+impl ActiveModelBehavior for ActiveModel {}

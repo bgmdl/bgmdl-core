@@ -6,13 +6,13 @@ use crate::utils::regex::regex_get;
 pub struct ParserTitleResult {
     pub fansub: String,
     pub is_number_ep: bool,
-    pub ep: i32, // ep = -1 when is_number_ep = false
+    pub ep: i32,        // ep = -1 when is_number_ep = false
     pub ep_str: String, // = "" when is_number_ep = true
     pub lang: Vec<String>,
     pub is_multi_lang: bool, // if lang > 1 ep can not be trust
     pub start_ep: u32,
     pub end_ep: u32,
-    pub is_multi_ep: bool
+    pub is_multi_ep: bool,
 }
 
 pub const LANG_LIST: [&str; 7] = ["CHS", "CHT", "JPN", "ENG", "RUS", "ITA", "SPA"];
@@ -21,15 +21,11 @@ pub fn parse(title: &String) -> ParserTitleResult {
     dbg!(title);
     let regex_fansub_first = r"\[([^\n\r\[\]]*)\]";
     let regex_fansub_second = r"【([^\n\r\[\]]*)】";
-    let regex_multi_ep = r"([0-9]{2,4})\s*(-|~|to)\s*(S[0-9]{2,4}E([0-9]{2,4})|E([0-9]{2,4})|([0-9]{2,4}))";
+    let regex_multi_ep =
+        r"([0-9]{2,4})\s*(-|~|to)\s*(S[0-9]{2,4}E([0-9]{2,4})|E([0-9]{2,4})|([0-9]{2,4}))";
     let regex_special_without_tag = r"(OVA|SP|OAD|SP)( ?([0-9]{1,2})| )";
     let regex_special_with_tag = r"\[(OVA|SP|OAD|SP)\]([\s\S]*([0-9]{1,2})| )";
-    let regex_single = [
-        r"S\d+E(\d+)",
-        r"E(\d+)",
-        r"\b0(\d)\b",
-        r"\b(\d{2})\b",
-    ];
+    let regex_single = [r"S\d+E(\d+)", r"E(\d+)", r"\b0(\d)\b", r"\b(\d{2})\b"];
 
     let mut result = ParserTitleResult {
         fansub: if let Some(fansub) = regex_get(regex_fansub_first, &title.clone(), 1) {
@@ -42,7 +38,8 @@ pub fn parse(title: &String) -> ParserTitleResult {
         is_number_ep: true,
         ep: 0,
         ep_str: "".to_string(),
-        lang: { let mut result = vec![]; 
+        lang: {
+            let mut result = vec![];
             for lang in LANG_LIST.iter() {
                 if title.contains(lang) {
                     result.push(lang.to_string());
@@ -53,13 +50,21 @@ pub fn parse(title: &String) -> ParserTitleResult {
         is_multi_lang: false,
         is_multi_ep: false,
         start_ep: 0,
-        end_ep: 0
+        end_ep: 0,
     };
     let re = Regex::new(regex_multi_ep).unwrap();
     if let Some(caps) = re.captures(&title.clone()) {
         result.is_multi_ep = true;
         result.start_ep = caps.get(1).unwrap().as_str().parse::<u32>().unwrap_or(0);
-        result.end_ep = caps.get(4).unwrap_or(caps.get(5).unwrap_or(caps.get(6).unwrap_or(caps.get(3).unwrap()))).as_str().parse::<u32>().unwrap_or(0);
+        result.end_ep = caps
+            .get(4)
+            .unwrap_or(
+                caps.get(5)
+                    .unwrap_or(caps.get(6).unwrap_or(caps.get(3).unwrap())),
+            )
+            .as_str()
+            .parse::<u32>()
+            .unwrap_or(0);
     }
     let re = Regex::new(regex_special_without_tag).unwrap();
     if let Some(caps) = re.captures(&title.clone()) {
@@ -111,7 +116,6 @@ pub mod test {
         let result = parse(&title);
         assert_eq!(result.ep_str, String::from("OVA"));
     }
-
 
     #[test]
     pub fn test_parse_multiep() {

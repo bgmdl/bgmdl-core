@@ -2,167 +2,167 @@
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoCollection {
-	#[serde(rename = "collect")]
-	pub collect: Option<i32>,
+    #[serde(rename = "collect")]
+    pub collect: Option<i32>,
 
-	#[serde(rename = "doing")]
-	pub doing: Option<i32>,
+    #[serde(rename = "doing")]
+    pub doing: Option<i32>,
 
-	#[serde(rename = "dropped")]
-	pub dropped: Option<i32>,
+    #[serde(rename = "dropped")]
+    pub dropped: Option<i32>,
 
-	#[serde(rename = "on_hold")]
-	pub on_hold: Option<i32>,
+    #[serde(rename = "on_hold")]
+    pub on_hold: Option<i32>,
 
-	#[serde(rename = "wish")]
-	pub wish: Option<i32>,
+    #[serde(rename = "wish")]
+    pub wish: Option<i32>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoImages {
-	#[serde(rename = "common")]
-	pub common: Option<String>,
+    #[serde(rename = "common")]
+    pub common: Option<String>,
 
-	#[serde(rename = "grid")]
-	pub grid: Option<String>,
+    #[serde(rename = "grid")]
+    pub grid: Option<String>,
 
-	#[serde(rename = "large")]
-	pub large: Option<String>,
+    #[serde(rename = "large")]
+    pub large: Option<String>,
 
-	#[serde(rename = "medium")]
-	pub medium: Option<String>,
+    #[serde(rename = "medium")]
+    pub medium: Option<String>,
 
-	#[serde(rename = "small")]
-	pub small: Option<String>,
+    #[serde(rename = "small")]
+    pub small: Option<String>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoInfoboxValueTypeB {
     #[serde(rename = "v")]
-    pub v: Option<String>
+    pub v: Option<String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BangumiInfoInfoboxValue {
     TypeA(String),
-    TypeB(Vec<BangumiInfoInfoboxValueTypeB>)
+    TypeB(Vec<BangumiInfoInfoboxValueTypeB>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoInfobox {
-	#[serde(rename = "key")]
-	pub key: Option<String>,
+    #[serde(rename = "key")]
+    pub key: Option<String>,
 
-	#[serde(rename = "value")]
-	pub value: Option<BangumiInfoInfoboxValue>,
+    #[serde(rename = "value")]
+    pub value: Option<BangumiInfoInfoboxValue>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoCount {
-	#[serde(rename = "1")]
-	pub count_1: Option<i32>,
+    #[serde(rename = "1")]
+    pub count_1: Option<i32>,
 
-	#[serde(rename = "10")]
-	pub count_10: Option<i32>,
+    #[serde(rename = "10")]
+    pub count_10: Option<i32>,
 
-	#[serde(rename = "2")]
-	pub count_2: Option<i32>,
+    #[serde(rename = "2")]
+    pub count_2: Option<i32>,
 
-	#[serde(rename = "3")]
-	pub count_3: Option<i32>,
+    #[serde(rename = "3")]
+    pub count_3: Option<i32>,
 
-	#[serde(rename = "4")]
-	pub count_4: Option<i32>,
+    #[serde(rename = "4")]
+    pub count_4: Option<i32>,
 
-	#[serde(rename = "5")]
-	pub count_5: Option<i32>,
+    #[serde(rename = "5")]
+    pub count_5: Option<i32>,
 
-	#[serde(rename = "6")]
-	pub count_6: Option<i32>,
+    #[serde(rename = "6")]
+    pub count_6: Option<i32>,
 
-	#[serde(rename = "7")]
-	pub count_7: Option<i32>,
+    #[serde(rename = "7")]
+    pub count_7: Option<i32>,
 
-	#[serde(rename = "8")]
-	pub count_8: Option<i32>,
+    #[serde(rename = "8")]
+    pub count_8: Option<i32>,
 
-	#[serde(rename = "9")]
-	pub count_9: Option<i32>,
+    #[serde(rename = "9")]
+    pub count_9: Option<i32>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoRating {
-	#[serde(rename = "count")]
-	pub count: Option<BangumiInfoCount>,
+    #[serde(rename = "count")]
+    pub count: Option<BangumiInfoCount>,
 
-	#[serde(rename = "rank")]
-	pub rank: Option<i32>,
+    #[serde(rename = "rank")]
+    pub rank: Option<i32>,
 
-	#[serde(rename = "score")]
-	pub score: Option<f64>,
+    #[serde(rename = "score")]
+    pub score: Option<f64>,
 
-	#[serde(rename = "total")]
-	pub total: Option<i32>,
+    #[serde(rename = "total")]
+    pub total: Option<i32>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfoTags {
-	#[serde(rename = "count")]
-	pub count: Option<i32>,
+    #[serde(rename = "count")]
+    pub count: Option<i32>,
 
-	#[serde(rename = "name")]
-	pub name: Option<String>,
+    #[serde(rename = "name")]
+    pub name: Option<String>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiInfo {
-	#[serde(rename = "collection")]
-	pub collection: Option<BangumiInfoCollection>,
+    #[serde(rename = "collection")]
+    pub collection: Option<BangumiInfoCollection>,
 
-	#[serde(rename = "date")]
-	pub date: Option<String>,
+    #[serde(rename = "date")]
+    pub date: Option<String>,
 
-	#[serde(rename = "eps")]
-	pub eps: Option<i32>,
+    #[serde(rename = "eps")]
+    pub eps: Option<i32>,
 
-	#[serde(rename = "id")]
-	pub id: Option<i32>,
+    #[serde(rename = "id")]
+    pub id: Option<i32>,
 
-	#[serde(rename = "images")]
-	pub images: Option<BangumiInfoImages>,
+    #[serde(rename = "images")]
+    pub images: Option<BangumiInfoImages>,
 
-	#[serde(rename = "infobox")]
-	pub infobox: Option<Vec<BangumiInfoInfobox>>,
+    #[serde(rename = "infobox")]
+    pub infobox: Option<Vec<BangumiInfoInfobox>>,
 
-	#[serde(rename = "locked")]
-	pub locked: Option<bool>,
+    #[serde(rename = "locked")]
+    pub locked: Option<bool>,
 
-	#[serde(rename = "name")]
-	pub name: Option<String>,
+    #[serde(rename = "name")]
+    pub name: Option<String>,
 
-	#[serde(rename = "name_cn")]
-	pub name_cn: Option<String>,
+    #[serde(rename = "name_cn")]
+    pub name_cn: Option<String>,
 
-	#[serde(rename = "nsfw")]
-	pub nsfw: Option<bool>,
+    #[serde(rename = "nsfw")]
+    pub nsfw: Option<bool>,
 
-	#[serde(rename = "platform")]
-	pub platform: Option<String>,
+    #[serde(rename = "platform")]
+    pub platform: Option<String>,
 
-	#[serde(rename = "rating")]
-	pub rating: Option<BangumiInfoRating>,
+    #[serde(rename = "rating")]
+    pub rating: Option<BangumiInfoRating>,
 
-	#[serde(rename = "series")]
-	pub series: Option<bool>,
+    #[serde(rename = "series")]
+    pub series: Option<bool>,
 
-	#[serde(rename = "summary")]
-	pub summary: Option<String>,
+    #[serde(rename = "summary")]
+    pub summary: Option<String>,
 
-	#[serde(rename = "tags")]
-	pub tags: Option<Vec<BangumiInfoTags>>,
+    #[serde(rename = "tags")]
+    pub tags: Option<Vec<BangumiInfoTags>>,
 
-	#[serde(rename = "total_episodes")]
-	pub total_episodes: Option<i32>,
+    #[serde(rename = "total_episodes")]
+    pub total_episodes: Option<i32>,
 
-	#[serde(rename = "type")]
-	pub root_type: Option<i32>,
+    #[serde(rename = "type")]
+    pub root_type: Option<i32>,
 
-	#[serde(rename = "volumes")]
-	pub volumes: Option<i32>,
+    #[serde(rename = "volumes")]
+    pub volumes: Option<i32>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BangumiSearchImages {

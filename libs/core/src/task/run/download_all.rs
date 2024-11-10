@@ -6,5 +6,4 @@ pub struct TaskDownloadAll {
     pub save_path: String,
 }
 
-pub async fn apply(_task: &TaskDownloadAll) {
-}
+pub async fn apply(_task: &TaskDownloadAll) {}

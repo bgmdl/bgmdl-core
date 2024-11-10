@@ -1,6 +1,9 @@
-use reqwest::{self, blocking, header::{ACCEPT, USER_AGENT}};
-use crate::utils::error::GetError;
 use crate::declare::bangumi;
+use crate::utils::error::GetError;
+use reqwest::{
+    self, blocking,
+    header::{ACCEPT, USER_AGENT},
+};
 
 pub type Result<T> = ::std::result::Result<T, GetError>;
 
@@ -16,7 +19,8 @@ pub fn get_bangumi_info(client: blocking::Client, key: String) -> Result<bangumi
     let search_result = search_bangumi(client.clone(), key)?;
     let id = search_result.list.unwrap()[0].id.unwrap();
     let url = format!("https://api.bgm.tv/v0/subjects/{}", id);
-    let res = client.get(url.as_str())
+    let res = client
+        .get(url.as_str())
         .header(USER_AGENT, "BGMdl Crawal")
         .header(ACCEPT, "json")
         .send()?;
@@ -48,7 +52,7 @@ pub fn get_bangumi_names(client: blocking::Client, key: String) -> Result<Vec<St
 mod tests {
     use super::*;
     use reqwest::blocking;
-    
+
     #[test]
     fn test_get_bangumi_info() {
         let client = blocking::Client::new();

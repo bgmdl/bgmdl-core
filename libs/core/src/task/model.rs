@@ -5,8 +5,11 @@ use std::{
 
 use serde::Deserialize;
 
+use super::run::{
+    self, change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll,
+    report_error::ReportError,
+};
 use crate::declare::error::CoreError;
-use super::run::{self, change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll, report_error::ReportError};
 
 #[derive(Deserialize, Debug, Clone)]
 pub enum TaskName {
@@ -46,7 +49,7 @@ impl PartialOrd for TaskMap {
 pub struct TaskQueue {
     pub task_map: BinaryHeap<TaskMap>, // max in top
     pub task_list: HashMap<u32, TaskMap>,
-    pub tasks: HashMap<u32, TaskDetail>, 
+    pub tasks: HashMap<u32, TaskDetail>,
     pub task_id: usize,
 }
 
@@ -62,7 +65,7 @@ impl TaskQueue {
             task_map: BinaryHeap::new(),
             tasks: HashMap::new(),
             task_list: HashMap::new(),
-            task_id: 0
+            task_id: 0,
         }
     }
 
@@ -80,7 +83,7 @@ impl TaskQueue {
     }
 
     pub fn exec_top_block(&mut self) -> Result<(), CoreError> {
-        async_run!{
+        async_run! {
             self.exec_top().await
         }
     }
@@ -95,7 +98,8 @@ impl TaskQueue {
             }
             true
         });
-        self.task_map.push(self.task_list.get(&taskid).unwrap().clone());
+        self.task_map
+            .push(self.task_list.get(&taskid).unwrap().clone());
     }
 
     pub async fn exec_top(&mut self) -> Result<(), CoreError> {

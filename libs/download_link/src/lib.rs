@@ -10,7 +10,6 @@ pub struct DownloadData {
     pub eta: i64,
 }
 
-
 use log::{LevelFilter, Log, Metadata, Record};
 
 #[repr(C)]
@@ -18,7 +17,7 @@ pub struct LogParam {
     pub enabled: extern "C" fn(&Metadata) -> bool,
     pub log: extern "C" fn(&Record),
     pub flush: extern "C" fn(),
-    pub level: LevelFilter
+    pub level: LevelFilter,
 }
 
 struct DLog;
@@ -86,8 +85,14 @@ pub fn log_param() -> LogParam {
 unsafe impl Send for DownloadData {}
 
 pub type Callback = extern "C" fn(*mut c_void, data: DownloadData);
-pub type StartFunc = unsafe fn(link: *const c_char, username: *const c_char, password: *const c_char) -> i32;
-pub type DownloadFunc = unsafe fn(url: *const c_char, save_path: *const c_char, rename: *const c_char, callback: Callback) -> i32;
+pub type StartFunc =
+    unsafe fn(link: *const c_char, username: *const c_char, password: *const c_char) -> i32;
+pub type DownloadFunc = unsafe fn(
+    url: *const c_char,
+    save_path: *const c_char,
+    rename: *const c_char,
+    callback: Callback,
+) -> i32;
 
 impl DownloadData {
     pub fn new(name: &str, progress: f64, speed: i64, eta: i64) -> Self {

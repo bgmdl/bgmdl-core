@@ -2,7 +2,8 @@ use sea_orm::DbErr;
 
 #[derive(Debug)]
 pub enum CoreError {
-    DbError(DbErr), StdError(Box<dyn std::error::Error>)
+    DbError(DbErr),
+    StdError(Box<dyn std::error::Error>),
 }
 
 impl From<DbErr> for CoreError {

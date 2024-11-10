@@ -102,7 +102,7 @@ mod test {
     #[test]
     fn test_search_by_namelist() {
         let name_list = vec!["Senpai wa Otokonoko 1080p".to_string()];
-        async_run!{
+        async_run! {
             search_by_namelist(&name_list).await
         };
     }

@@ -18,5 +18,10 @@ extern "C" fn callback(_: *mut c_void, data: DownloadData) {
 
 pub async fn apply(task: &mut TaskDownload) {
     log::info!("start to download {}", task.url);
-    DOWNLOAD_HANDLER.lock().unwrap().download_by_link(task.url.as_str(), task.save_path.as_str(), task.save_name.as_str(), callback);
+    DOWNLOAD_HANDLER.lock().unwrap().download_by_link(
+        task.url.as_str(),
+        task.save_path.as_str(),
+        task.save_name.as_str(),
+        callback,
+    );
 }

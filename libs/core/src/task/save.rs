@@ -1,7 +1,3 @@
-pub fn save_task() {
+pub fn save_task() {}
 
-}
-
-pub fn get_task_list() {
-
-}
+pub fn get_task_list() {}

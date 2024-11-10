@@ -43,7 +43,7 @@ pub enum TaskAddProps {
 
 impl From<TaskAddProps> for TaskDetail {
     fn from(props: TaskAddProps) -> Self {
-        match props     {
+        match props {
             TaskAddProps::Download(props) => TaskDetail::Download(TaskDownload {
                 url: props.url,
                 save_path: props.save_path,
