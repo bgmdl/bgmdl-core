@@ -240,6 +240,11 @@ pub fn init(url: &str, schema: &str, username: &str, hashed_password: &str) -> R
             value: ActiveValue::set(0),
         };
         let _ = data.insert(&db).await;
+        let data = Count::ActiveModel {
+            key: ActiveValue::set("task_status".to_string()),
+            value: ActiveValue::set(0),
+        };
+        let _ = data.insert(&db).await;
     };
     log::info!("Basic count initialized");
     Ok(())

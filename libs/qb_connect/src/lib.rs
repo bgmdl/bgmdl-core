@@ -67,7 +67,7 @@ pub extern "C" fn start(
             let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
             let mut times = 0;
             loop {
-                if times == 0 { // 5 second / update torrent status
+                if times == 0 { // 3 second / update torrent status
                     // check client status.
                     let torrents = client.get_torrent_list(GetTorrentListArg {
                         filter: Some(TorrentFilter::Active),
@@ -81,6 +81,7 @@ pub extern "C" fn start(
                     }
                     let mut active_torrents = vec![];
                     let torrents = torrents.unwrap();
+                    log::trace!("torrents: {:?}", torrents);
                     for torrent in torrents {
                         let name = torrent.name.unwrap();
                         let progress = torrent.progress.unwrap();
@@ -101,8 +102,12 @@ pub extern "C" fn start(
                         } else if callback_map.contains_key(&name) {
                             status_map.insert(name.clone(), data.clone());
                             callback_map.get(&name).unwrap()(std::ptr::null_mut(), data.clone());
+                            active_torrents.push(name);
                         }
                     }
+                    log::trace!("status_map: {:?}", DOWNLOAD_TASK_STATUS.lock().unwrap());
+                    log::trace!("callback_map: {:?}", DOWNLOAD_CALLBACK_TASKS.lock().unwrap());
+                    log::trace!("active_torrents: {:?}", active_torrents);
                     let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
                     let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
                     status_map.retain(|k, _| active_torrents.contains(k));
@@ -126,7 +131,7 @@ pub extern "C" fn start(
                 }
                 request_map.clear();
                 times += 1;
-                times %= 5;
+                times %= 3;
                 thread::sleep(std::time::Duration::from_secs(1));
             }
         }
