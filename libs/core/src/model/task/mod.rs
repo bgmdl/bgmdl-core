@@ -13,7 +13,8 @@ pub struct TaskAddResult {
 
 pub async fn add_task(task: TaskDetail, db: &DatabaseConnection, default: Option<i32>) -> Result<TaskAddResult, CoreError> {
     let tid = gen_id("task", db).await?;
-    TaskEntity::insert(
+    log::info!("Add task: {:?}", tid);
+    let res = TaskEntity::insert(
         TaskActiveModel {
             ..(TaskModel {
                 ..(&task).into()
@@ -23,7 +24,9 @@ pub async fn add_task(task: TaskDetail, db: &DatabaseConnection, default: Option
         }
     )
     .exec(db)
-    .await?;
+    .await;
+    dbg!(&res);
+    log::info!("Add task: {:?}", tid);
     let _ = task::add_task(task, default.unwrap_or(1));
     Ok(TaskAddResult {
         id: tid,

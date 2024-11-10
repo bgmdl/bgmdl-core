@@ -1,7 +1,7 @@
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReportError {
-    error: String,
+    pub error: String,
 }
 
 pub async fn apply(task: &mut ReportError) {

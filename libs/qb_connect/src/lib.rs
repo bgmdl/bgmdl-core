@@ -1,4 +1,4 @@
-use download_link::{DownloadData, Callback};
+use download_link::{init, Callback, DownloadData, LogParam};
 use qbit_rs::{model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource}, Qbit};
 use tokio::runtime;
 use std::{collections::HashMap, ffi::CStr, os::raw::c_char, thread};
@@ -17,9 +17,14 @@ macro_rules! async_run {
     }};
 }
 
+#[no_mangle]
+pub extern "C" fn init_logger(param: LogParam) {
+    init(param);
+}
+
 struct DownloadType {
     url: String,
-    savepath: String,
+    save_path: String,
     rename: String,
     func: Callback,
 }
@@ -87,7 +92,7 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
                 log::info!("start to download: {}", name);
                 let result = client.add_torrent(AddTorrentArg {
                     source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
-                    savepath: if download.savepath == "default".to_string() { None } else { Some(download.savepath.to_string()) },
+                    save_path: if download.save_path == "default".to_string() { None } else { Some(download.save_path.to_string()) },
                     rename: Some(download.rename.to_string()),
                     ..Default::default()
                 }).await as Result<(), qbit_rs::Error>;
@@ -107,13 +112,13 @@ pub extern "C" fn start(link: *const c_char, username: *const c_char, password: 
 }
 
 #[no_mangle]
-pub extern "C" fn download_by_link(url: *const c_char, savepath: *const c_char, rename: *const c_char, callback_fn: Callback) -> i32 {
+pub extern "C" fn download_by_link(url: *const c_char, save_path: *const c_char, rename: *const c_char, callback_fn: Callback) -> i32 {
     let url = unsafe { CStr::from_ptr(url).to_str().unwrap().to_string() };
-    let savepath = unsafe { CStr::from_ptr(savepath).to_str().unwrap().to_string() };
+    let save_path = unsafe { CStr::from_ptr(save_path).to_str().unwrap().to_string() };
     let rename = unsafe { CStr::from_ptr(rename).to_str().unwrap().to_string() };
     DOWNLOAD_REQUEST.lock().unwrap().insert(url.clone(), DownloadType {
         url,
-        savepath,
+        save_path,
         rename,
         func: callback_fn,
     });

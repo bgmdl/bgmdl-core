@@ -39,6 +39,7 @@ impl MigrationTrait for MigrationBgmData {
                 .col(ColumnDef::new(iden::task::Task::TId).integer().not_null().primary_key())
                 .col(ColumnDef::new(iden::task::Task::Name).string().not_null())
                 .col(ColumnDef::new(iden::task::Task::Status).string().not_null())
+                .col(ColumnDef::new(iden::task::Task::Description).string().not_null())
                 .col(ColumnDef::new(iden::task::Task::CreatedAt).date_time().not_null())
                 .to_owned()
         ).await?;

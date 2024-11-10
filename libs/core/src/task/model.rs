@@ -16,6 +16,7 @@ pub enum TaskName {
     ReportError,
 }
 
+#[derive(Debug, Clone)]
 pub enum TaskDetail {
     Download(TaskDownload),
     DownloadAll(TaskDownloadAll),
@@ -23,7 +24,7 @@ pub enum TaskDetail {
     ReportError(ReportError),
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct TaskMap {
     pub status: String,
     pub priopity: i32,
@@ -92,17 +93,21 @@ impl TaskQueue {
     }
 
     pub async fn exec_top(&mut self) -> Result<(), CoreError> {
+        log::trace!("task exec top");
         if self.task_map.is_empty() {
             log::debug!("task queue is empty");
             return Ok(());
         }
         let task = self.task_map.pop().unwrap();
+        log::trace!("task exec top: {:?}", &task);
         if let Some(task) = self.tasks.get_mut(&task.taskid) {
             match task {
                 TaskDetail::Download(task) => {
+                    log::trace!("task exec download");
                     run::download::apply(task).await;
                 }
                 TaskDetail::DownloadAll(task) => {
+                    log::trace!("task exec downloadall");
                     run::download_all::apply(task).await;
                 }
                 TaskDetail::ChangeName(task) => {
@@ -115,7 +120,6 @@ impl TaskQueue {
         } else {
             log::warn!("task not found in task queue (server error).");
         }
-        
         Ok(())
     }
 

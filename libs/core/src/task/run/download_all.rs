@@ -1,9 +1,9 @@
-use download_link::DownloadData;
+// use download_link::DownloadData;
 
+#[derive(Debug, Clone)]
 pub struct TaskDownloadAll {
-    pub update_func: Box<dyn FnMut(DownloadData) -> () + Send>,
     pub url: String,
-    pub savepath: String,
+    pub save_path: String,
 }
 
 pub async fn apply(_task: &TaskDownloadAll) {

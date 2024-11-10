@@ -46,7 +46,7 @@ impl From<&TaskDetail> for Model {
                 created_at: Default::default(),
                 description: Json! {
                     "url": task.url.clone(),
-                    "path": task.savepath.clone(),
+                    "path": task.save_path.clone(),
                 },
             },
             TaskDetail::DownloadAll(task) => Model {
@@ -56,7 +56,7 @@ impl From<&TaskDetail> for Model {
                 created_at: Default::default(),
                 description: Json! {
                     "url": task.url.clone(),
-                    "path": task.savepath.clone(),
+                    "path": task.save_path.clone(),
                 },
             },
             TaskDetail::ChangeName(task) => Model {

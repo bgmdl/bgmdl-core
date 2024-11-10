@@ -1,5 +1,5 @@
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ChangeName {
     pub path: String,
     pub name: String,

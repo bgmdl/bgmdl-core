@@ -1,6 +1,6 @@
 use core::{model, utils::db::conn::get_connect};
 use actix_web::{post, services, web, Scope};
-use crate::{declare::api::task::CheckLoginProps, handler::ResultHandler, utils::encryption::encode_password};
+use crate::{declare::api::user::CheckLoginProps, handler::ResultHandler, utils::encryption::encode_password};
 
 #[post("/check")]
 pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<String> {
@@ -23,7 +23,8 @@ pub async fn check_login(data: web::Json<CheckLoginProps>) -> ResultHandler<Stri
     let result = result.unwrap();
     if result == true {
         Ok(Json! {
-            "result": "success"
+            "result": "success",
+            "_pwd": password
         })
     } else {
         Ok(Json! {
