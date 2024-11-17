@@ -22,8 +22,8 @@ pub async fn add_task(
     default: Option<i32>,
 ) -> Result<TaskAddResult, CoreError> {
     let tid = gen_id("task", db).await?;
-    log::trace!("Add task: {:?}", tid);
-    log::trace!("task detail: {:?}", &task);
+    log::debug!("Add task: {tid}");
+    log::debug!("task detail: {:?}", &task);
     TaskEntity::insert(TaskActiveModel {
         ..(TaskModel { ..(&task).into() }
             .set_tid(tid)
@@ -32,6 +32,7 @@ pub async fn add_task(
     })
     .exec(db)
     .await?;
+    log::debug!("add task {tid} into database done.");
     let task = task.set_tid(tid);
     dbg!(&task);
     task::add_task(task, default.unwrap_or(1));

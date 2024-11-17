@@ -70,12 +70,31 @@ pub extern "C" fn start(
             let mut client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
             let mut times = 0;
             loop {
+                // check download request
+                let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();
+                for (name, download) in request_map.iter() {
+                    log::info!("start to download: {}", name);
+                    let result = client.add_torrent(AddTorrentArg {
+                        source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
+                        savepath: if download.save_path == *"default" { None } else { Some(download.save_path.to_string()) },
+                        rename: Some(download.rename.to_string()),
+                        ..Default::default()
+                    }).await as Result<(), qbit_rs::Error>;
+                    if let Err(e) = result {
+                        log::warn!("cannot add torrent: {}", e);
+                    }
+                    let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                    callback_map.insert(download.rename.clone(), download.func);
+                    TASKID_MAP.lock().unwrap().insert(download.rename.clone(), download.taskid);
+                }
+                request_map.clear();
                 if times == 0 { // 3 second / update torrent status
                     // check client status.
                     let torrents = client.get_torrent_list(GetTorrentListArg {
                         filter: Some(TorrentFilter::Active),
                         ..Default::default()
                     }).await;
+                    
                     if torrents.is_err() {
                         log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
                         client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
@@ -124,24 +143,6 @@ pub extern "C" fn start(
                     callback_map.retain(|k, _| active_torrents.contains(k));
                     taskid_map.retain(|k, _| active_torrents.contains(k));
                 }
-                // check download request
-                let mut request_map = DOWNLOAD_REQUEST.lock().unwrap();
-                for (name, download) in request_map.iter() {
-                    log::info!("start to download: {}", name);
-                    let result = client.add_torrent(AddTorrentArg {
-                        source: TorrentSource::Urls{urls: download.url.to_string().parse().unwrap()},
-                        savepath: if download.save_path == *"default" { None } else { Some(download.save_path.to_string()) },
-                        rename: Some(download.rename.to_string()),
-                        ..Default::default()
-                    }).await as Result<(), qbit_rs::Error>;
-                    if let Err(e) = result {
-                        log::warn!("cannot add torrent: {}", e);
-                    }
-                    let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
-                    callback_map.insert(download.rename.clone(), download.func);
-                    TASKID_MAP.lock().unwrap().insert(download.rename.clone(), download.taskid);
-                }
-                request_map.clear();
                 times += 1;
                 times %= 3;
                 thread::sleep(std::time::Duration::from_secs(1));

@@ -3,6 +3,8 @@
 //! --config -c <config>, config path (optional\, ~/.bgmdl/config.json)
 //! --port -p <port>, server port (optional\, default: read by config or 1824)
 
+use download_link::Callback;
+
 use crate::{handle, model::task::callback, utils::config_load::env_load};
 
 pub fn run(config: Option<String>, port: Option<String>) {
@@ -14,7 +16,7 @@ pub fn run(config: Option<String>, port: Option<String>) {
         get_env!(download.url).as_str(),
         get_env!(download.username).as_str(),
         get_env!(download.password).as_str(),
-        callback
+        &(callback as Callback)
     );
     let port = port.map(|x| x.parse::<u16>().unwrap());
     let port = port.unwrap_or(get_env!(port));

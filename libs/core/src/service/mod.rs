@@ -24,11 +24,14 @@ lazy_static! {
         );
         DownloadHandler::new(DOWNLOAD_PATH.lock().unwrap().as_str())
     });
-    pub static ref DOWNLOAD_CALLBACK_FUNC: Arc<Mutex<Box<Callback>>> =
-        Arc::new(Mutex::new(Box::new(default_callback_func)));
+    pub static ref DOWNLOAD_CALLBACK_FUNC: Mutex<Callback> =
+        Mutex::new(default_callback_func);
+
+    pub static ref DOWNLOAD_CALLBACK_FUNC_REF: Arc<Mutex<&'static Callback>> =
+        Arc::new(Mutex::new(&(default_callback_func as Callback)));
 }
 
-pub fn start(path: &str, link: &str, username: &str, password: &str, callback: Callback) {
+pub fn start(path: &str, link: &str, username: &str, password: &str, callback: &'static Callback) {
     *DOWNLOAD_PATH.lock().unwrap() = String::from(path);
     lazy_static::initialize(&DOWNLOAD_HANDLER);
     DOWNLOAD_HANDLER

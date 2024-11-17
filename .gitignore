@@ -9,4 +9,6 @@ Cargo.lock
 *.local.rs
 config.json
 *.db
+*.local.log
+*.log
 config-*.json

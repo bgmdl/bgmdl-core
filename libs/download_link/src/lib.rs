@@ -96,6 +96,7 @@ pub type DownloadFunc = unsafe fn(
     callback: Callback,
 ) -> i32;
 
+
 impl DownloadData {
     pub fn new(name: &str, progress: f64, speed: i64, eta: i64, taskid: i32) -> Self {
         DownloadData {
