@@ -8,6 +8,7 @@ lazy_static! {
     pub static ref DB_CONNECT: Mutex<Option<DatabaseConnection>> = Mutex::new(None);
 }
 
+#[allow(clippy::await_holding_lock)]
 pub async fn get_connect() -> Result<DatabaseConnection, CoreError> {
     if DB_CONNECT.lock().unwrap().is_none() || DB_CONNECT.lock().unwrap().as_ref().unwrap().ping().await.is_err() {
         let mut options = ConnectOptions::new(get_env!(dblink).as_str())

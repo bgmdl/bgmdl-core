@@ -47,7 +47,7 @@ impl DownloadHandler {
                 url.as_ptr(),
                 save_path.as_ptr(),
                 rename.as_ptr(),
-                callback
+                callback,
             )
         }
     }

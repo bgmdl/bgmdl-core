@@ -24,9 +24,7 @@ lazy_static! {
         );
         DownloadHandler::new(DOWNLOAD_PATH.lock().unwrap().as_str())
     });
-    pub static ref DOWNLOAD_CALLBACK_FUNC: Mutex<Callback> =
-        Mutex::new(default_callback_func);
-
+    pub static ref DOWNLOAD_CALLBACK_FUNC: Mutex<Callback> = Mutex::new(default_callback_func);
     pub static ref DOWNLOAD_CALLBACK_FUNC_REF: Arc<Mutex<&'static Callback>> =
         Arc::new(Mutex::new(&(default_callback_func as Callback)));
 }

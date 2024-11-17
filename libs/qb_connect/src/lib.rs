@@ -94,7 +94,7 @@ pub extern "C" fn start(
                         filter: Some(TorrentFilter::Active),
                         ..Default::default()
                     }).await;
-                    
+
                     if torrents.is_err() {
                         log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
                         client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
