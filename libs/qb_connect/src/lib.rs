@@ -7,6 +7,7 @@ use qbit_rs::{
     model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource},
     Qbit,
 };
+use core::task;
 use std::{collections::HashMap, ffi::CStr, os::raw::c_char, thread};
 use tokio::runtime;
 
@@ -88,20 +89,63 @@ pub extern "C" fn start(
                     TASKID_MAP.lock().unwrap().insert(download.rename.clone(), download.taskid);
                 }
                 request_map.clear();
-                if times == 0 { // 3 second / update torrent status
-                    // check client status.
+                if times == 1824 {
                     let torrents = client.get_torrent_list(GetTorrentListArg {
-                        filter: Some(TorrentFilter::Active),
+                        filter: Some(TorrentFilter::All),
                         ..Default::default()
                     }).await;
-
                     if torrents.is_err() {
                         log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
                         client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
                         thread::sleep(std::time::Duration::from_secs(5));
                         continue;
                     }
-                    let mut active_torrents = vec![];
+                    let torrents = torrents.unwrap();
+                    // remove finished torrent
+                    for torrent in torrents {
+                        use qbit_rs::model::State::*;
+                        match torrent.state.unwrap() {
+                            StalledUP | Uploading | CheckingUP | ForcedUP => {
+                                let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
+                                let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                                let mut taskid_map = TASKID_MAP.lock().unwrap();
+                                let name = torrent.name.unwrap();
+                                if status_map.contains_key(&name) {
+                                    status_map.remove(&name);
+                                    callback_map.remove(&name);
+                                    taskid_map.remove(&name);
+                                }
+                            }
+                            Error | MissingFiles | Unknown => {
+                                let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
+                                let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
+                                let mut taskid_map = TASKID_MAP.lock().unwrap();
+                                let name = torrent.name.unwrap();
+                                status_map.remove(&name);
+                                callback_map.remove(&name);
+                                taskid_map.remove(&name);
+                                if status_map.contains_key(&name) {
+                                    status_map.remove(&name);
+                                    callback_map.remove(&name);
+                                    taskid_map.remove(&name);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                if times % 3 == 0 { // 3 second / update torrent status
+                    // check client status.
+                    let torrents = client.get_torrent_list(GetTorrentListArg {
+                        filter: Some(TorrentFilter::Active),
+                        ..Default::default()
+                    }).await;
+                    if torrents.is_err() {
+                        log::warn!("cannot get torrent, trying to restart client.(sleep 5 sec)");
+                        client = Qbit::new(link.as_str(), Credential::new(username.as_str(), password.as_str()));
+                        thread::sleep(std::time::Duration::from_secs(5));
+                        continue;
+                    }
                     let torrents = torrents.unwrap();
                     log::trace!("torrents: {:?}", torrents);
                     for torrent in torrents {
@@ -114,37 +158,30 @@ pub extern "C" fn start(
                         let callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
                         if status_map.contains_key(&name) {
                             let last_data = status_map.get(&name).unwrap();
-                            active_torrents.push(name.clone());
                             if last_data.progress != progress || last_data.eta != eta || last_data.speed != speed {
                                 status_map.insert(name.clone(), data.clone());
                                 if let Some(callback) = callback_map.get(&name) {
                                     let taskid_map = TASKID_MAP.lock().unwrap();
                                     data.taskid = *taskid_map.get(&name).unwrap();
+                                    log::trace!("start callback");
                                     callback(std::ptr::null_mut(), data.clone());
                                     log::trace!("done callback");
                                 }
                             }
                         } else if callback_map.contains_key(&name) {
-                            active_torrents.push(name.clone());
                             status_map.insert(name.clone(), data.clone());
                             data.taskid = *TASKID_MAP.lock().unwrap().get(&name).unwrap();
+                            log::trace!("start callback");
                             callback_map.get(&name).unwrap()(std::ptr::null_mut(), data.clone());
                             log::trace!("done callback");
                         }
                     }
                     log::trace!("status_map: {:?}", DOWNLOAD_TASK_STATUS.lock().unwrap());
                     log::trace!("callback_map: {:?}", DOWNLOAD_CALLBACK_TASKS.lock().unwrap());
-                    log::trace!("active_torrents: {:?}", active_torrents);
                     log::trace!("taskid_map: {:?}", TASKID_MAP.lock().unwrap());
-                    let mut status_map = DOWNLOAD_TASK_STATUS.lock().unwrap();
-                    let mut callback_map = DOWNLOAD_CALLBACK_TASKS.lock().unwrap();
-                    let mut taskid_map = TASKID_MAP.lock().unwrap();
-                    status_map.retain(|k, _| active_torrents.contains(k));
-                    callback_map.retain(|k, _| active_torrents.contains(k));
-                    taskid_map.retain(|k, _| active_torrents.contains(k));
                 }
                 times += 1;
-                times %= 3;
+                times %= 6000;
                 thread::sleep(std::time::Duration::from_secs(1));
             }
         }
