@@ -1,13 +1,13 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::await_holding_lock)]
 
+use core::task;
 use download_link::{init, Callback, DownloadData, LogParam};
 use lazy_static::lazy_static;
 use qbit_rs::{
     model::{AddTorrentArg, Credential, GetTorrentListArg, TorrentFilter, TorrentSource},
     Qbit,
 };
-use core::task;
 use std::{collections::HashMap, ffi::CStr, os::raw::c_char, thread};
 use tokio::runtime;
 
