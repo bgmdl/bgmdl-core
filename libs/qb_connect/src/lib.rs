@@ -1,7 +1,6 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::await_holding_lock)]
 
-use core::task;
 use download_link::{init, Callback, DownloadData, LogParam};
 use lazy_static::lazy_static;
 use qbit_rs::{

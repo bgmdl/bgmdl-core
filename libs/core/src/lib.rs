@@ -1,3 +1,4 @@
+pub mod env;
 #[macro_use]
 pub mod utils;
 pub mod bangumi;

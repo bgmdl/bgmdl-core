@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use model::{TaskDetail, TaskQueue};
 use std::{sync::Mutex, thread};
 
-use crate::service::DOWNLOAD_CALLBACK_FUNC_REF;
+use crate::env::DOWNLOAD_CALLBACK_FUNC_REF;
 
 pub mod model;
 pub mod run;

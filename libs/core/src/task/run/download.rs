@@ -1,4 +1,4 @@
-use crate::service::{DOWNLOAD_CALLBACK_FUNC_REF, DOWNLOAD_HANDLER};
+use crate::env::{DOWNLOAD_CALLBACK_FUNC_REF, DOWNLOAD_HANDLER};
 #[derive(Debug, Clone)]
 pub struct TaskDownload {
     pub taskid: i32,
