@@ -1,14 +1,18 @@
 use crate::declare::db::entity::task::ActiveModel as TaskActiveModel;
+use crate::declare::db::entity::task::Column as TaskColumn;
 use crate::declare::db::entity::task::Entity as TaskEntity;
 use crate::declare::db::entity::task::Model as TaskModel;
 
 use crate::declare::db::entity::task_status::ActiveModel as TaskStatusActiveModel;
+use crate::declare::db::entity::task_status::Column as TaskStatusColumn;
 use crate::declare::db::entity::task_status::Entity as TaskStatusEntity;
+use crate::declare::db::entity::task_status::Model as TaskStatusModel;
 
 use crate::task;
+use crate::task::model::TaskOption;
 use crate::{declare::error::CoreError, task::model::TaskDetail};
 use sea_orm::Set;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 use super::count::gen_id;
 
@@ -24,18 +28,22 @@ pub async fn add_task(
     let tid = gen_id("task", db).await?;
     log::debug!("Add task: {tid}");
     log::debug!("task detail: {:?}", &task);
+    let created_at = now_time!();
     TaskEntity::insert(TaskActiveModel {
         ..(TaskModel { ..(&task).into() }
             .set_tid(tid)
-            .set_created_at(now_time!()))
+            .set_created_at(created_at))
         .into()
     })
     .exec(db)
     .await?;
-    log::debug!("add task {tid} into database done.");
-    let task = task.set_tid(tid);
-    dbg!(&task);
-    task::add_task(task, default.unwrap_or(1));
+    let task_option = TaskOption {
+        taskid: tid,
+        tasktype: "once".to_string().into(),
+        created_at,
+    };
+    log::trace!("add task {tid} into database done.");
+    task::add_task(task, task_option, default.unwrap_or(1));
     Ok(TaskAddResult { id: tid })
 }
 
@@ -57,4 +65,23 @@ pub async fn add_task_progress(
     .exec(db)
     .await?;
     Ok(())
+}
+
+pub async fn get_task_detail(
+    taskid: i32,
+    db: &DatabaseConnection,
+) -> Result<(TaskDetail, TaskOption, Vec<TaskStatusModel>), CoreError> {
+    let task_detail = TaskEntity::find()
+        .filter(TaskColumn::Tid.eq(taskid))
+        .one(db)
+        .await?;
+    let task_status = TaskStatusEntity::find()
+        .filter(TaskStatusColumn::Tid.eq(taskid))
+        .all(db)
+        .await?;
+    Ok((
+        task_detail.clone().unwrap().into(),
+        task_detail.clone().unwrap().into(),
+        task_status,
+    ))
 }

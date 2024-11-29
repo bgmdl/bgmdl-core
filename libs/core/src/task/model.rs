@@ -3,7 +3,8 @@ use std::{
     collections::{BinaryHeap, HashMap},
 };
 
-use serde::Deserialize;
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 
 use super::run::{
     self, change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll,
@@ -19,7 +20,30 @@ pub enum TaskName {
     ReportError,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TaskType {
+    Once,
+    Schedule,
+}
+
+impl From<String> for TaskType {
+    fn from(task_type: String) -> Self {
+        match task_type.as_str() {
+            "once" => TaskType::Once,
+            "schedule" => TaskType::Schedule,
+            _ => TaskType::Once,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskOption {
+    pub taskid: i32,
+    pub tasktype: TaskType,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TaskDetail {
     Download(TaskDownload),
     DownloadAll(TaskDownloadAll),
@@ -51,38 +75,11 @@ impl From<ReportError> for TaskDetail {
     }
 }
 
-impl TaskDetail {
-    pub fn set_tid(self, tid: i32) -> TaskDetail {
-        match self {
-            TaskDetail::Download(task) => TaskDownload {
-                taskid: tid,
-                ..task
-            }
-            .into(),
-            TaskDetail::DownloadAll(task) => TaskDownloadAll {
-                taskid: tid,
-                ..task
-            }
-            .into(),
-            TaskDetail::ChangeName(task) => ChangeName {
-                taskid: tid,
-                ..task
-            }
-            .into(),
-            TaskDetail::ReportError(task) => ReportError {
-                taskid: tid,
-                ..task
-            }
-            .into(),
-        }
-    }
-}
-
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct TaskMap {
     pub status: String,
     pub priopity: i32,
-    pub taskid: u32,
+    pub taskid: i32,
 }
 
 impl Ord for TaskMap {
@@ -98,9 +95,9 @@ impl PartialOrd for TaskMap {
 }
 
 pub struct TaskQueue {
-    pub task_map: BinaryHeap<TaskMap>, // max in top
-    pub task_list: HashMap<u32, TaskMap>,
-    pub tasks: HashMap<u32, TaskDetail>,
+    pub task_heap: BinaryHeap<TaskMap>, // max in top
+    pub task_list: HashMap<i32, TaskMap>,
+    pub tasks: HashMap<i32, (TaskDetail, TaskOption)>,
     pub task_id: usize,
 }
 
@@ -113,24 +110,24 @@ impl Default for TaskQueue {
 impl TaskQueue {
     pub fn new() -> Self {
         TaskQueue {
-            task_map: BinaryHeap::new(),
+            task_heap: BinaryHeap::new(),
             tasks: HashMap::new(),
             task_list: HashMap::new(),
             task_id: 0,
         }
     }
 
-    pub fn push(&mut self, task: TaskDetail, priopity: i32) {
-        let taskid = self.task_id as u32;
+    pub fn push(&mut self, task: (TaskDetail, TaskOption), priopity: i32) {
+        let (task_detail, task_option) = task;
         let item = TaskMap {
             status: "waiting".to_string(),
             priopity,
-            taskid,
+            taskid: task_option.taskid,
         };
-        self.task_map.push(item.clone());
-        self.task_list.insert(taskid, item);
-        self.tasks.insert(taskid, task);
-        self.task_id += 1;
+        self.task_heap.push(item.clone());
+        self.task_list.insert(task_option.taskid, item);
+        self.tasks
+            .insert(task_option.taskid, (task_detail, task_option));
     }
 
     pub fn exec_top_block(&mut self) -> Result<(), CoreError> {
@@ -139,43 +136,43 @@ impl TaskQueue {
         }
     }
 
-    pub fn change_status(&mut self, taskid: u32, status: &str) {
+    pub fn change_status(&mut self, taskid: i32, status: &str) {
         if let Some(item) = self.task_list.get_mut(&taskid) {
             item.status = status.to_string();
         }
-        self.task_map.retain(|task| {
+        self.task_heap.retain(|task| {
             if task.taskid == taskid {
                 return false;
             }
             true
         });
-        self.task_map
+        self.task_heap
             .push(self.task_list.get(&taskid).unwrap().clone());
     }
 
     pub async fn exec_top(&mut self) -> Result<(), CoreError> {
         log::trace!("task exec top");
-        if self.task_map.is_empty() {
+        if self.task_heap.is_empty() {
             log::debug!("task queue is empty");
             return Ok(());
         }
-        let task = self.task_map.pop().unwrap();
+        let task = self.task_heap.pop().unwrap();
         log::trace!("task exec top: {:?}", &task);
-        if let Some(task) = self.tasks.get_mut(&task.taskid) {
-            match task {
-                TaskDetail::Download(task) => {
+        if let Some((task_detail, task_option)) = self.tasks.get_mut(&task.taskid) {
+            match task_detail {
+                TaskDetail::Download(task_detail) => {
                     log::trace!("task exec download");
-                    run::download::apply(task).await;
+                    run::download::apply(task_detail, task_option).await;
                 }
-                TaskDetail::DownloadAll(task) => {
+                TaskDetail::DownloadAll(task_detail) => {
                     log::trace!("task exec downloadall");
-                    run::download_all::apply(task).await;
+                    run::download_all::apply(task_detail, task_option).await;
                 }
-                TaskDetail::ChangeName(task) => {
-                    run::change_name::apply(task).await;
+                TaskDetail::ChangeName(task_detail) => {
+                    run::change_name::apply(task_detail, task_option).await;
                 }
-                TaskDetail::ReportError(task) => {
-                    run::report_error::apply(task).await;
+                TaskDetail::ReportError(task_detail) => {
+                    run::report_error::apply(task_detail, task_option).await;
                 }
             }
         } else {
@@ -197,7 +194,7 @@ impl TaskQueue {
             }
             true
         });
-        self.task_map.retain(|task| {
+        self.task_heap.retain(|task| {
             let item = self.task_list.get(&task.taskid);
             if item.is_none() {
                 return false;
@@ -215,9 +212,9 @@ impl TaskQueue {
         });
     }
 
-    pub fn drop_id(&mut self, taskid: u32) {
+    pub fn drop_id(&mut self, taskid: i32) {
         // nlogn delete.
-        self.task_map.retain(|task| task.taskid != taskid);
+        self.task_heap.retain(|task| task.taskid != taskid);
         self.tasks.remove(&taskid);
     }
 }

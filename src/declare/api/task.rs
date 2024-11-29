@@ -49,23 +49,23 @@ impl From<TaskAddProps> for TaskDetail {
                 save_path: props.save_path,
                 save_name: props.save_name,
                 tool_lib_path: get_env!(download.tool_path),
-                taskid: -1,
-
             }),
             TaskAddProps::DownloadAll(props) => TaskDetail::DownloadAll(TaskDownloadAll {
                 url: props.urls,
                 save_path: "".to_string(),
-                taskid: -1,
             }),
             TaskAddProps::ChangeName(props) => TaskDetail::ChangeName(ChangeName {
                 path: props.path,
                 name: props.new_name,
-                taskid: -1,
             }),
             TaskAddProps::ReportError(props) => TaskDetail::ReportError(ReportError {
                 error: props.msg,
-                taskid: -1,
             }),
         }
     }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct TaskGetDetailProps {
+    pub taskid: i32,
 }

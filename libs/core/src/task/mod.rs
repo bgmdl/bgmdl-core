@@ -1,6 +1,6 @@
 use download_link::Callback;
 use lazy_static::lazy_static;
-use model::{TaskDetail, TaskQueue};
+use model::{TaskDetail, TaskOption, TaskQueue};
 use std::{sync::Mutex, thread};
 
 use crate::env::DOWNLOAD_CALLBACK_FUNC_REF;
@@ -11,13 +11,17 @@ pub mod save;
 
 lazy_static! {
     static ref TASK_QUEUE: Mutex<TaskQueue> = Mutex::new(TaskQueue::new());
-    static ref NEW_TASKS: Mutex<Vec<(TaskDetail, i32)>> = Mutex::new(Vec::new());
+    static ref NEW_TASKS: Mutex<Vec<(TaskDetail, TaskOption, i32)>> = Mutex::new(Vec::new());
 }
 
-pub fn add_task(task: TaskDetail, priority: i32) {
+pub fn add_task(task_detail: TaskDetail, task_option: TaskOption, priority: i32) {
     let mut new_tasks = NEW_TASKS.lock().unwrap();
-    log::debug!("add task({:?}) into queue:", task);
-    new_tasks.push((task, priority));
+    log::debug!(
+        "task_option: {:?}, task_detail: {:?}",
+        task_option,
+        task_detail
+    );
+    new_tasks.push((task_detail, task_option, priority));
     log::debug!("add task into queue done");
 }
 
@@ -32,12 +36,11 @@ pub fn apply(callback: &'static Callback) {
                 if !NEW_TASKS.lock().unwrap().is_empty() {
                     log::trace!("add new task into queue");
                     let mut new_task = NEW_TASKS.lock().unwrap();
-                    for (task, priority) in new_task.drain(..) {
-                        log::trace!("add task({:?}) into queue", task);
-                        task_queue.push(task, priority);
+                    for (task_detail, task_option, priority) in new_task.drain(..) {
+                        task_queue.push((task_detail, task_option), priority);
                     }
                 }
-                if task_queue.task_map.is_empty() {
+                if task_queue.task_heap.is_empty() {
                     thread::sleep(std::time::Duration::from_millis(500));
                     continue;
                 }

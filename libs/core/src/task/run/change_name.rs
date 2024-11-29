@@ -1,8 +1,11 @@
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+use crate::task::model::TaskOption;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangeName {
-    pub taskid: i32,
     pub path: String,
     pub name: String,
 }
 
-pub async fn apply(_task: &mut ChangeName) {}
+pub async fn apply(_task: &mut ChangeName, _task_option: &TaskOption) {}

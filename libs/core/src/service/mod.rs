@@ -1,6 +1,6 @@
-use download_link::Callback;
 use super::task;
 use crate::env::{DOWNLOAD_HANDLER, DOWNLOAD_PATH};
+use download_link::Callback;
 
 pub extern "C" fn default_callback_func(
     _: *mut std::ffi::c_void,

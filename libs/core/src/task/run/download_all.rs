@@ -1,10 +1,13 @@
 // use download_link::DownloadData;
 
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+use crate::task::model::TaskOption;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskDownloadAll {
-    pub taskid: i32,
     pub url: String,
     pub save_path: String,
 }
 
-pub async fn apply(_task: &TaskDownloadAll) {}
+pub async fn apply(_task: &TaskDownloadAll, _task_option: &TaskOption) {}
