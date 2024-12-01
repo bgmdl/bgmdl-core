@@ -1,6 +1,6 @@
-use std::sync::Mutex;
 use lazy_static::lazy_static;
 use macro_lib::generate_commands;
+use std::sync::Mutex;
 
 include!("./require.rs");
 include!("./default.rs");
@@ -40,7 +40,8 @@ pub static mut DBSCHEMA: state::InitCell<String> = state::InitCell::new();
 
 generate_commands!();
 
-fn main() {/*
+fn main() {
+    /*
     if env::var("LOG_LEVEL").is_err() {
         env::set_var("LOG_LEVEL", "info"); // set default log level
     }
