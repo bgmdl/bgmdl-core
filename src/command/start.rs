@@ -1,13 +1,17 @@
 //! router: start
 //! description: Start the server
+//! log_level required
 //! --config -c <config>, config path (optional\, ~/.bgmdl/config.json)
 //! --port -p <port>, server port (optional\, default: read by config or 1824)
 
 use download_link::Callback;
+use log::LevelFilter;
+use std::str::FromStr;
 
-use crate::{handle, model::task::callback, utils::config_load::env_load};
+use crate::{handle, model::task::callback, utils::{config_load::env_load, logger::setup_logger}};
 
-pub fn run(config: Option<String>, port: Option<String>) {
+pub fn run(log_level: String, config: Option<String>, port: Option<String>) {
+    let _ = setup_logger(LevelFilter::from_str(log_level.as_str()).unwrap_or(LevelFilter::Info));
     let config_path = config.unwrap_or("~/.bgmdl/config.json".to_string());
     env_load(&config_path);
     log::info!("Env loaded: {:?}", get_env!());

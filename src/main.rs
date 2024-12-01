@@ -1,8 +1,5 @@
-use std::{env, sync::Mutex};
-
-use env_logger::Builder;
+use std::sync::Mutex;
 use lazy_static::lazy_static;
-use log::LevelFilter;
 use macro_lib::generate_commands;
 
 include!("./require.rs");
@@ -43,7 +40,7 @@ pub static mut DBSCHEMA: state::InitCell<String> = state::InitCell::new();
 
 generate_commands!();
 
-fn main() {
+fn main() {/*
     if env::var("LOG_LEVEL").is_err() {
         env::set_var("LOG_LEVEL", "info"); // set default log level
     }
@@ -51,7 +48,7 @@ fn main() {
         .filter_module("sqlx::query", LevelFilter::Warn)
         .filter_module("actix_server::server", LevelFilter::Warn)
         .parse_env("LOG_LEVEL")
-        .init();
+        .init(); */
     execute_command();
 }
 

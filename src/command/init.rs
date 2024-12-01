@@ -1,5 +1,6 @@
 //! router: init
 //! description: Initialize the basic data.
+//! log_level required
 //! --database -d <database>, database: sqlite / postgres
 //! --url -u <url>, database url
 //! --schema -s <schema>, schema name
@@ -13,14 +14,18 @@
 //! --enable_download -E <enable_download>, enable download?
 //! --download_tool_path -T <download_tool_path>, download tool path(lib file) mac: .dylib\, linux: .so\, windows: .dll
 
+use std::str::FromStr;
 use std::{fs, path};
 use download_link::{DownloadFunc, StartFunc};
+use log::LevelFilter;
 use crate::utils::inquire::*;
 
 use crate::utils::encryption::encode_password;
+use crate::utils::logger::setup_logger;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run(
+    log_level: String,
     url: Option<String>,
     database: Option<String>,
     schema: Option<String>,
@@ -34,6 +39,7 @@ pub fn run(
     enable_download: Option<bool>,
     download_tool_path: Option<String>
 ) {
+    let _ = setup_logger(LevelFilter::from_str(log_level.as_str()).unwrap_or(LevelFilter::Info));
     let _ = port;
     let dbtype = database.unwrap_or(ask_select("Please choose database type", vec!["sqlite", "postgres"]));
     if dbtype != "postgres" && dbtype != "sqlite" {

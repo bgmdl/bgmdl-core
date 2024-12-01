@@ -2,6 +2,7 @@
 pub mod encryption;
 pub mod inquire;
 pub mod config_load;
+pub mod logger;
 
 #[macro_export]
 macro_rules! Json {

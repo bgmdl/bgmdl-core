@@ -28,3 +28,6 @@ shellexpand = "3.1.0"
 futures = "0.3.31"
 sea-orm = "1.1.1"
 derive_more = { version = "1.0.0", features = ["full"]}
+fern = "0.7.0"
+chrono = "0.4.38"
+colored = "2.1.0"

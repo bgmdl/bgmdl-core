@@ -5,66 +5,6 @@ use quote::quote;
 use std::fs;
 use syn::{parse_macro_input, ItemFn};
 
-/* #[proc_macro]
-pub fn pub_handler(_input: TokenStream) -> TokenStream {
-    let handlers_path = format!("src/handler");
-    let mut service_calls = Vec::new();
-    for entry in fs::read_dir(handlers_path.as_str()).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_file() {
-            if let Some(filename) = path.file_stem() {
-                if let Some(module_name) = filename.to_str() {
-                    if module_name == "mod" {
-                        continue;
-                    }
-                    let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
-                    // mod_statements.push_str(&format!("mod {};\n", module_name));
-                    service_calls.push(quote!{pub mod #mod_ident;});
-                }
-            }
-        }
-    }
-    let expanded = quote! {
-        #(#service_calls)*
-    };
-
-    TokenStream::from(expanded)
-}
-
-#[proc_macro]
-pub fn pub_files(input: TokenStream) -> TokenStream {
-    let d = parse_macro_input!(input as syn::LitStr).value();
-    let handlers_path = format!("src/{}", d);
-    let mut service_calls = Vec::new();
-    for entry in fs::read_dir(handlers_path.as_str()).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_file() {
-            if let Some(filename) = path.file_stem() {
-                if let Some(module_name) = filename.to_str() {
-                    if module_name == "mod" {
-                        continue;
-                    }
-                    let mod_ident = syn::Ident::new(module_name, proc_macro2::Span::call_site());
-                    // mod_statements.push_str(&format!("mod {};\n", module_name));
-                    service_calls.push(quote!{pub mod #mod_ident;});
-                }
-            }
-        } else if path.is_dir() {
-            let dir_name = path.file_name().unwrap().to_str().unwrap();
-            let mod_ident = syn::Ident::new(dir_name, proc_macro2::Span::call_site());
-            service_calls.push(quote!{pub mod #mod_ident;});
-        }
-    }
-    let expanded = quote! {
-        #(#service_calls)*
-    };
-
-    TokenStream::from(expanded)
-}
-*/
-
 #[proc_macro]
 pub fn generate_services(_input: TokenStream) -> TokenStream {
     let handlers_path = "src/handler";
@@ -172,6 +112,7 @@ pub fn generate_commands(_item: TokenStream) -> TokenStream {
     let expanded = quote! {
         pub fn build_cli() -> clap::Command {
             clap::Command::new("bangumidownload")
+            .arg_required_else_help(true)
                 #(#subcommands_code)*
         }
         pub fn execute_command() {
@@ -261,11 +202,17 @@ fn parse_command_and_run_from_file(
                     });
                     continue;
                 }
-                // options.push(quote! {
-                //     .arg(clap::Arg::new(#arg).required(false))
-                // });
             }
         }
+    }
+    // find log_level required flag
+    let log_level_flag = content
+        .lines()
+        .find(|line| line.starts_with("//! log_level required"));
+    if let Some(_log_level_flag) = log_level_flag {
+        options.push(quote! {
+            .arg(clap::Arg::new("log_level").long("log_level").value_name("log_level").default_value("info").help("Set Log level(trace, debug, info, warn, error, off)"))
+        });
     }
     let mut run_str = "".to_string();
     let mut is_run_line = false;
