@@ -21,7 +21,7 @@ use log::LevelFilter;
 use crate::utils::inquire::*;
 
 use crate::utils::encryption::encode_password;
-use crate::utils::logger::setup_logger;
+use crate::utils::logger::setup_logger_with_stdout;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run(
@@ -39,7 +39,7 @@ pub fn run(
     enable_download: Option<bool>,
     download_tool_path: Option<String>
 ) {
-    let _ = setup_logger(LevelFilter::from_str(log_level.as_str()).unwrap_or(LevelFilter::Info));
+    let _ = setup_logger_with_stdout(LevelFilter::from_str(log_level.as_str()).unwrap_or(LevelFilter::Info));
     let _ = port;
     let dbtype = database.unwrap_or(ask_select("Please choose database type", vec!["sqlite", "postgres"]));
     if dbtype != "postgres" && dbtype != "sqlite" {
@@ -92,7 +92,7 @@ pub fn run(
                 Some("".to_string())
             } else {
                 Some(ask_input_without_hint("Please input download tool path(mac: .dylib, linux: .so, win: .dll)"))
-            }   
+            }
         } else {
             download_tool_path
         };

@@ -31,3 +31,4 @@ derive_more = { version = "1.0.0", features = ["full"]}
 fern = "0.7.0"
 chrono = "0.4.38"
 colored = "2.1.0"
+actix-ws = "0.3.0"

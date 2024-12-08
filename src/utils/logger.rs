@@ -1,5 +1,15 @@
 use colored::Colorize;
+use fern::Output;
 use log::LevelFilter;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LogData {
+    pub level: String,
+    pub target: String,
+    pub message: String,
+    pub time: String,
+}
 
 pub fn get_color(level: log::Level) -> colored::Color {
     match level {
@@ -11,7 +21,23 @@ pub fn get_color(level: log::Level) -> colored::Color {
     }
 }
 
-pub fn setup_logger(level: LevelFilter) -> Result<(), fern::InitError> {
+pub fn setup_logger_with_stdout(level: LevelFilter) -> Result<(), fern::InitError> {
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{} {} {}] {}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string().as_str().magenta(),
+                record.level().as_str().color(get_color(record.level())),
+                record.target().color(colored::Color::Cyan),
+                message
+            ))
+        })
+        .level(level)
+        .apply()?;
+    Ok(())
+}
+
+pub fn setup_logger<T: Into<Output>>(level: LevelFilter, logger: T) -> Result<(), fern::InitError> {
     fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -24,6 +50,7 @@ pub fn setup_logger(level: LevelFilter) -> Result<(), fern::InitError> {
         })
         .level(level)
         .chain(std::io::stdout())
+        .chain(logger.into())
         .apply()?;
     Ok(())
 }

@@ -12,6 +12,8 @@ pub enum HttpError {
     CoreError,
     #[display("IO Error")]
     IOError,
+    #[display("Actix Error")]
+    ActixError,
 }
 
 impl error::ResponseError for HttpError {
@@ -25,8 +27,15 @@ impl error::ResponseError for HttpError {
 
     fn status_code(&self) -> StatusCode {
         match *self {
-            HttpError::CoreError | HttpError::IOError => StatusCode::INTERNAL_SERVER_ERROR,
+            HttpError::CoreError | HttpError::IOError | HttpError::ActixError => StatusCode::INTERNAL_SERVER_ERROR,
         }
+    }
+}
+
+
+impl From<actix_web::Error> for HttpError {
+    fn from(_error: actix_web::Error) -> Self {
+        HttpError::ActixError
     }
 }
 
@@ -39,3 +48,4 @@ impl From<CoreError> for HttpError {
 pub type ResultHandler<T> = Result<T, HttpError>;
 pub mod user;
 pub mod task;
+pub mod log;

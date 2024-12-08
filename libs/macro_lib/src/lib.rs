@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::fs;
 use syn::{parse_macro_input, ItemFn};
 
@@ -54,16 +54,30 @@ pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_body = &input.block;
     let func_return = &input.sig.output;
 
+    // check return type is HttpResponse or String
+    let return_data = if func_return.into_token_stream().to_string().contains("HttpResponse") {
+        quote! {
+            return Ok(actix_web::HttpResponse::InternalServerError().json(Json! {
+                "code": -1,
+                "msg": "No permission."
+            }));
+        }
+    } else {
+        quote! {
+            return Ok(Json! {
+                "code": -1,
+                "msg": "No permission."
+            }.into());
+        }
+    };
+
     let expanded = quote! {
         async fn #func_name(req: actix_web::HttpRequest, #func_args) #func_return {
             // 检查用户权限
             // get user name
             let has_permission = check_user_permission(&req, #perm).await;
             if !has_permission {
-                return Ok(Json! {
-                    "code": -1,
-                    "msg": "No permission."
-                });
+                #return_data
             }
 
             #func_body
