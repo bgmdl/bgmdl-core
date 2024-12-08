@@ -55,7 +55,11 @@ pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_return = &input.sig.output;
 
     // check return type is HttpResponse or String
-    let return_data = if func_return.into_token_stream().to_string().contains("HttpResponse") {
+    let return_data = if func_return
+        .into_token_stream()
+        .to_string()
+        .contains("HttpResponse")
+    {
         quote! {
             return Ok(actix_web::HttpResponse::InternalServerError().json(Json! {
                 "code": -1,
