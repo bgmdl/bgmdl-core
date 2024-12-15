@@ -1,3 +1,4 @@
+use actix_ws::Session;
 use utils::logger::LogData;
 
 
@@ -18,8 +19,14 @@ pub struct Env {
     pub port: u16,
 }
 
+use std::sync::mpsc::Sender;
+use crate::service::Task;
+
 lazy_static! {
+    pub static ref LOG_WS_COUNT: Mutex<i32> = Mutex::new(0);
+    pub static ref LOG_WS_POLL: Mutex<Vec<(Mutex<Session>, i32)>> = Mutex::new(vec![]);
     pub static ref LOG_DATA: Mutex<Vec<LogData>> = Mutex::new(vec![]);
+    pub static ref TASK_SENDER: Mutex<Sender<Task>> = Mutex::new(start_async_task_service());
     pub static ref RUNENV: Mutex<Env> = Mutex::new(Env {
         dblink: String::from(""),
         dbschema: String::from(""),

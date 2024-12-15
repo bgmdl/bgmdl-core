@@ -43,5 +43,29 @@ macro_rules! async_run {
     }};
 }
 
+#[macro_export]
+macro_rules! async_run_all {
+    ($($body:tt)*) => {{
+        let bt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+        let result = std::panic::catch_unwind(|| { bt.block_on(async {
+            $($body)*
+        })});
+        if let Err(_) = result {
+            return tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                $($body)*
+            });
+        } else {
+            return result.unwrap();
+        }
+    }};
+}
+
 pub mod check_perm;
 pub mod db;
