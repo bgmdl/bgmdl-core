@@ -23,37 +23,43 @@ pub struct LogParam {
 
 struct DLog;
 
-static mut PARAM: Option<LogParam> = None;
+use std::sync::{Arc, Mutex};
+use lazy_static::lazy_static;
+
+
+lazy_static! {
+    static ref PARAM: Arc<Mutex<Option<LogParam>>> = Arc::new(Mutex::new(None));
+}
 
 pub fn init(param: LogParam) {
     let level = param.level;
-    unsafe {
-        if PARAM.is_some() {
-            eprint!("log should only init once");
-            return;
-        }
-        PARAM.replace(param);
+    let mut param_guard = PARAM.lock().unwrap();
+    if param_guard.is_some() {
+        eprint!("log should only init once");
+        return;
     }
+    *param_guard = Some(param);
+    drop(param_guard); // 显式释放锁
+
     if let Err(err) = log::set_logger(&LOGGER).map(|_| log::set_max_level(level)) {
         eprint!("set logger failed:{}", err);
     }
 }
 
-fn param() -> &'static LogParam {
-    unsafe { PARAM.as_ref().unwrap() }
-}
-
 impl Log for DLog {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        (param().enabled)(metadata)
+        let param = PARAM.lock().unwrap();
+        (param.as_ref().unwrap().enabled)(metadata)
     }
 
     fn log(&self, record: &Record) {
-        (param().log)(record)
+        let param = PARAM.lock().unwrap();
+        (param.as_ref().unwrap().log)(record)
     }
 
     fn flush(&self) {
-        (param().flush)()
+        let param = PARAM.lock().unwrap();
+        (param.as_ref().unwrap().flush)()
     }
 }
 

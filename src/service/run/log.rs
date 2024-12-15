@@ -8,6 +8,7 @@ pub struct LogServiceData {
 unsafe impl Send for LogServiceData {}
 unsafe impl Sync for LogServiceData {}
 
+#[allow(clippy::await_holding_lock)]
 pub async fn apply(data: LogServiceData) {
     let _record = data.log_data;
     let _remove_flag = false;
