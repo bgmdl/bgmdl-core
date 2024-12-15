@@ -23,9 +23,8 @@ pub struct LogParam {
 
 struct DLog;
 
-use std::sync::{Arc, Mutex};
 use lazy_static::lazy_static;
-
+use std::sync::{Arc, Mutex};
 
 lazy_static! {
     static ref PARAM: Arc<Mutex<Option<LogParam>>> = Arc::new(Mutex::new(None));
