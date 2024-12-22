@@ -31,7 +31,7 @@ impl Model {
 impl From<Model> for TaskOption {
     fn from(task: Model) -> Self {
         TaskOption {
-            taskid: task.tid,
+            task_id: task.tid,
             tasktype: TaskType::Once,
             created_at: task.created_at,
         }

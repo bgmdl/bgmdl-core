@@ -1,9 +1,13 @@
+use derive_more::derive::Display;
 use sea_orm::DbErr;
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum CoreError {
+    #[display("(CoreError) Db Error")]
     DbError(DbErr),
+    #[display("(CoreError) Std Error")]
     StdError(Box<dyn std::error::Error>),
+    #[display("(CoreError) Error")]
     StringError(String),
 }
 

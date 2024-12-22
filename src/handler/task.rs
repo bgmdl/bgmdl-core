@@ -1,3 +1,5 @@
+use core::model::task::{ExistTask, Task};
+
 use actix_web::{get, post, services, web, Scope};
 use macro_lib::perm;
 use crate::declare::api::task::TaskAddProps;
@@ -9,7 +11,9 @@ use crate::utils::db::get_connect;
 #[perm("task.add")]
 pub async fn add_task(data: web::Json<TaskAddProps>) -> ResultHandler<String> {
     let data: TaskAddProps = data.into_inner();
-    let _ = core::model::task::add_task(data.into(), &get_connect().await.ok().unwrap(), Some(1)).await;
+    let task: Task = data.into();
+    let task = task.save(&get_connect().await.ok().unwrap()).await?;
+    task.run(1).await?;
     Ok(Json!{
         "status": "success",
     })
@@ -19,12 +23,12 @@ pub async fn add_task(data: web::Json<TaskAddProps>) -> ResultHandler<String> {
 #[perm("task.detail")]
 pub async fn get_task_detail(data: web::Path<i32>) -> ResultHandler<String> {
     let taskid = data.into_inner();
-    let (task_detail, task_option, task_status) = core::model::task::get_task_detail(taskid, &get_connect().await.ok().unwrap()).await?;
+    let task = ExistTask::from_db(taskid, &get_connect().await.ok().unwrap()).await?;
     Ok(Json!{
         "status": "success",
-        "task_detail": task_detail,
-        "task_option": task_option,
-        "task_status": task_status,
+        "task_detail": task.task_detail,
+        "task_option": task.task_option,
+        "task_id": task.task_id,
     })
 }
 

@@ -8,7 +8,6 @@ use derive_more::derive::{Display, Error};
 
 #[derive(Debug, Display, Error)]
 pub enum HttpError {
-    #[display("Core Error")]
     CoreError,
     #[display("IO Error")]
     IOError,

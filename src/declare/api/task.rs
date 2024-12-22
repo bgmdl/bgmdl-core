@@ -1,4 +1,4 @@
-use core::task::{model::TaskDetail, run::{change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll, report_error::ReportError}};
+use core::{model::task::Task, task::{model::TaskDetail, run::{change_name::ChangeName, download::TaskDownload, download_all::TaskDownloadAll, report_error::ReportError}}};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -39,6 +39,14 @@ pub enum TaskAddProps {
 
     #[serde(rename = "report_error")]
     ReportError(TaskReportErrorProps),
+}
+
+impl From<TaskAddProps> for Task {
+    fn from(props: TaskAddProps) -> Self {
+        Task {
+            task_detail: props.into(),
+        }
+    }
 }
 
 impl From<TaskAddProps> for TaskDetail {

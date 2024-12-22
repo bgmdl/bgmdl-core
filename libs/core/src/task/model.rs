@@ -38,7 +38,7 @@ impl From<String> for TaskType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskOption {
-    pub taskid: i32,
+    pub task_id: i32,
     pub tasktype: TaskType,
     pub created_at: NaiveDateTime,
 }
@@ -122,12 +122,12 @@ impl TaskQueue {
         let item = TaskMap {
             status: "waiting".to_string(),
             priopity,
-            taskid: task_option.taskid,
+            taskid: task_option.task_id,
         };
         self.task_heap.push(item.clone());
-        self.task_list.insert(task_option.taskid, item);
+        self.task_list.insert(task_option.task_id, item);
         self.tasks
-            .insert(task_option.taskid, (task_detail, task_option));
+            .insert(task_option.task_id, (task_detail, task_option));
     }
 
     pub fn exec_top_block(&mut self) -> Result<(), CoreError> {
