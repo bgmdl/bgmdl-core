@@ -44,6 +44,7 @@ pub fn generate_services(_input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Check permission
 #[proc_macro_attribute]
 pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
