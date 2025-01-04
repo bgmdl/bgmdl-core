@@ -40,6 +40,5 @@ pub fn run(log_level: String, config: Option<String>, port: Option<String>) {
     );
     let port = port.map(|x| x.parse::<u16>().unwrap());
     let port = port.unwrap_or(get_env!(port));
-    log::info!("Starting server on port: {}", port);
     let _ = handle::main(port);
 }

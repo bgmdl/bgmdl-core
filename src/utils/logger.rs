@@ -1,6 +1,8 @@
+use std::panic;
+
 use colored::Colorize;
 use fern::Output;
-use log::LevelFilter;
+use log::{self, LevelFilter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -12,6 +14,9 @@ pub struct LogData {
 }
 
 pub fn get_color(level: log::Level) -> colored::Color {
+    panic::set_hook(Box::new(|panic_info| {
+        log::error!("Panic occurred: {:?}", panic_info);
+    }));
     match level {
         log::Level::Trace => colored::Color::White,
         log::Level::Debug => colored::Color::Blue,
@@ -33,6 +38,7 @@ pub fn setup_logger_with_stdout(level: LevelFilter) -> Result<(), fern::InitErro
             ))
         })
         .level(level)
+        .chain(std::io::stdout())
         .apply()?;
     Ok(())
 }

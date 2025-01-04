@@ -22,6 +22,7 @@ libloading = "0.8.5"
 chrono = "0.4.38"
 futures = "0.3.31"
 derive_more = "1.0.0"
+tap = "1.0.1"
 
 [dependencies.sea-orm-migration]
 version = "1.0.0-rc.5"

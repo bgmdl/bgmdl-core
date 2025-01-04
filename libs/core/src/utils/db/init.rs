@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use log::LevelFilter;
 use sea_orm::{ActiveModelTrait, ActiveValue, ConnectOptions, Database};
 use sea_orm_migration::prelude::*;
 
@@ -10,36 +11,6 @@ pub struct MigrationBgmData;
 #[async_trait]
 impl MigrationTrait for MigrationBgmData {
     async fn up(&self, manage: &SchemaManager) -> Result<(), DbErr> {
-        log::info!("Creating table bgmdata");
-        manage
-            .create_table(
-                Table::create()
-                    .table(iden::bgmdata::BgmData::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Id)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::BgmId)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Status)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::BgmName)
-                            .string()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
-            .await?;
         log::info!("Creating table user");
         manage
             .create_table(
@@ -143,6 +114,92 @@ impl MigrationTrait for MigrationBgmData {
                     .to_owned(),
             )
             .await?;
+        log::info!("Creating table bgmdata");
+        manage
+            .create_table(
+                Table::create()
+                    .table(iden::bgmdata::BgmData::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Id)
+                            .integer()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::BindBgmId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Status)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::BgmName)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::TotalEp)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::NowEp)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Year)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Season)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Image)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::NameCn)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::NSFW)
+                            .boolean()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Platform)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Rating)
+                            .float()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Tags)
+                            .string() // save as json
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(iden::bgmdata::BgmData::Summary)
+                            .string()
+                            .not_null(),
+                    )
+
+                    .to_owned(),
+            )
+            .await?;
         Ok(())
     }
 
@@ -206,6 +263,7 @@ impl MigratorTrait for Migrator {
 pub fn init(url: &str, schema: &str, username: &str, hashed_password: &str) -> Result<(), DbErr> {
     let connection_options = ConnectOptions::new(url)
         .set_schema_search_path(schema)
+        .sqlx_logging_level(LevelFilter::Trace)
         .to_owned();
     log::info!("Database connecting...");
     let db = async_run! {
