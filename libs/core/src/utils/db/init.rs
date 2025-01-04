@@ -196,7 +196,6 @@ impl MigrationTrait for MigrationBgmData {
                             .string()
                             .not_null(),
                     )
-
                     .to_owned(),
             )
             .await?;

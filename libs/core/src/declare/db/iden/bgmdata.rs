@@ -22,5 +22,5 @@ pub enum BgmData {
     Tags,
     UpdateTime,
     CreateTime,
-    Rating
+    Rating,
 }

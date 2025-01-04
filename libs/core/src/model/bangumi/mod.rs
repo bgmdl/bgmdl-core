@@ -118,7 +118,7 @@ impl From<&Bangumi> for BangumiModel {
 }
 
 pub enum SyncType {
-    BgmTv
+    BgmTv,
 }
 
 impl Bangumi {
@@ -138,13 +138,13 @@ impl Bangumi {
         Ok(())
     }
 
-    pub async fn sync_info(self, sync_type: SyncType, db: &DatabaseConnection) -> Result<(), CoreError> {
+    pub async fn sync_info(
+        self,
+        sync_type: SyncType,
+        db: &DatabaseConnection,
+    ) -> Result<(), CoreError> {
         match sync_type {
-            SyncType::BgmTv => {
-                
-                
-                Ok(())
-            }
+            SyncType::BgmTv => Ok(()),
         }
     }
 }
