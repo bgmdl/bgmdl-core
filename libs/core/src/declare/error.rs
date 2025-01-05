@@ -9,6 +9,22 @@ pub enum CoreError {
     StdError(Box<dyn std::error::Error>),
     #[display("(CoreError) Error")]
     StringError(String),
+    #[display("(CoreError) Actix Error")]
+    ReqwestError(reqwest::Error),
+    #[display("(CoreError) Json Parse Error")]
+    ParseError(serde_json::Error),
+}
+
+impl From<reqwest::Error> for CoreError {
+    fn from(err: reqwest::Error) -> Self {
+        CoreError::ReqwestError(err)
+    }
+}
+
+impl From<serde_json::Error> for CoreError {
+    fn from(err: serde_json::Error) -> Self {
+        CoreError::ParseError(err)
+    }
 }
 
 impl From<String> for CoreError {

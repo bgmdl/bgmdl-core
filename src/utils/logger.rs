@@ -1,5 +1,3 @@
-use std::panic;
-
 use colored::Colorize;
 use fern::Output;
 use log::{self, LevelFilter};
@@ -14,9 +12,6 @@ pub struct LogData {
 }
 
 pub fn get_color(level: log::Level) -> colored::Color {
-    panic::set_hook(Box::new(|panic_info| {
-        log::error!("Panic occurred: {:?}", panic_info);
-    }));
     match level {
         log::Level::Trace => colored::Color::White,
         log::Level::Debug => colored::Color::Blue,

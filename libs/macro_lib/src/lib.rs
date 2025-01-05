@@ -77,10 +77,10 @@ pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        async fn #func_name(req: actix_web::HttpRequest, #func_args) #func_return {
+        async fn #func_name(___req: actix_web::HttpRequest, #func_args) #func_return {
             // 检查用户权限
             // get user name
-            let has_permission = check_user_permission(&req, #perm).await;
+            let has_permission = check_user_permission(&___req, #perm).await;
             if !has_permission {
                 #return_data
             }

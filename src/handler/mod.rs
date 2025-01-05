@@ -48,3 +48,4 @@ pub type ResultHandler<T> = Result<T, HttpError>;
 pub mod user;
 pub mod task;
 pub mod log;
+pub mod bgm;

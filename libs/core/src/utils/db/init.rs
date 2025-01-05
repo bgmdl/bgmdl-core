@@ -126,74 +126,25 @@ impl MigrationTrait for MigrationBgmData {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::BindBgmId).integer())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Status).string())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::BgmName).string())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::TotalEp).integer())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::NowEp).integer())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Year).integer())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Season).integer())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Image).string())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::NameCn).string())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::NSFW).boolean())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Platform).string())
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Rating).float())
                     .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::BindBgmId)
-                            .integer()
-                            .not_null(),
+                        ColumnDef::new(iden::bgmdata::BgmData::Tags).string(), // save as json
                     )
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Summary).string())
                     .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Status)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::BgmName)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::TotalEp)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::NowEp)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Year)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Season)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Image)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::NameCn)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::NSFW)
-                            .boolean()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Platform)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Rating)
-                            .float()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Tags)
-                            .string() // save as json
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Summary)
-                            .string()
+                        ColumnDef::new(iden::bgmdata::BgmData::Name)
+                            .date_time()
                             .not_null(),
                     )
                     .to_owned(),

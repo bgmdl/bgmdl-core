@@ -19,7 +19,7 @@ pub struct Model {
     pub nsfw: Option<bool>,
     pub platform: Option<String>,
     pub rating: Option<f64>,
-    pub tags: Option<Vec<String>>,
+    pub tags: Option<String>,
     pub summary: Option<String>,
 }
 

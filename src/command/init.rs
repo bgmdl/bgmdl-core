@@ -40,7 +40,6 @@ pub fn run(
     download_tool_path: Option<String>
 ) {
     let _ = setup_logger_with_stdout(LevelFilter::from_str(log_level.as_str()).unwrap_or(LevelFilter::Info));
-    log_panics::init();
     let dbtype = database.unwrap_or(ask_select("Please choose database type", vec!["sqlite", "postgres"]));
     if dbtype != "postgres" && dbtype != "sqlite" {
         log::error!("Database type not supported: {}", dbtype);

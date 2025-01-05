@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use actix_web::{web, HttpResponse, Scope};
+use actix_web::{web, HttpRequest, HttpResponse, Scope};
 use macro_lib::perm;
 use crate::{utils::check_perm::check_user_permission, LOG_WS_COUNT, LOG_WS_POLL};
 
@@ -8,7 +8,7 @@ use super::ResultHandler;
 
 
 #[perm("log.view")]
-pub async fn get_log(stream: web::Payload) -> ResultHandler<HttpResponse> {
+pub async fn get_log(req: HttpRequest, stream: web::Payload) -> ResultHandler<HttpResponse> {
     let (res, session, _stream) = actix_ws::handle(&req, stream)?;
     let count = *LOG_WS_COUNT.lock().unwrap();
     *LOG_WS_COUNT.lock().unwrap() = count + 1;

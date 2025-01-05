@@ -7,6 +7,7 @@ pub enum BgmData {
     Id,
     BindBgmId, // link with bgm_id
     BgmName,   // bgm name
+    #[sea_orm(iden = "bgm_status")]
     Status,
     TotalEp,
     NowEp,
@@ -16,6 +17,7 @@ pub enum BgmData {
     NSFW,
     #[sea_orm(iden = "name_cn")]
     NameCn,
+    Name,
     Image,
     Platform,
     Summary,
