@@ -21,6 +21,7 @@ pub struct Model {
     pub rating: Option<f64>,
     pub tags: Option<String>,
     pub summary: Option<String>,
+    pub ep_bind: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

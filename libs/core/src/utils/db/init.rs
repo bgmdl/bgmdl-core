@@ -138,15 +138,40 @@ impl MigrationTrait for MigrationBgmData {
                     .col(ColumnDef::new(iden::bgmdata::BgmData::NSFW).boolean())
                     .col(ColumnDef::new(iden::bgmdata::BgmData::Platform).string())
                     .col(ColumnDef::new(iden::bgmdata::BgmData::Rating).float())
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Tags).string(), // save as json
-                    )
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::Tags).string()) // save as json
                     .col(ColumnDef::new(iden::bgmdata::BgmData::Summary).string())
                     .col(
                         ColumnDef::new(iden::bgmdata::BgmData::Name)
                             .date_time()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(iden::bgmdata::BgmData::EpBind).string())
+                    .to_owned(),
+            )
+            .await?;
+        log::info!("Creating table bgmeps");
+        manage
+            .create_table(
+                Table::create()
+                    .table(iden::bgmeps::BgmEps::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(iden::bgmeps::BgmEps::Id)
+                            .integer()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::EpId).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::SubjectId).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Name).string())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Duration).string())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::AirDate).string())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Desc).string())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Ep).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Sort).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Comment).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Disc).integer())
+                    .col(ColumnDef::new(iden::bgmeps::BgmEps::DurationSecond).integer())
                     .to_owned(),
             )
             .await?;

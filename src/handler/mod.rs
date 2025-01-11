@@ -4,11 +4,12 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse,
 };
-use derive_more::derive::{Display, Error};
+use derive_more::derive::Display;
 
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display)]
 pub enum HttpError {
-    CoreError,
+    #[display("(Core Error){}", _0)]
+    CoreError(CoreError),
     #[display("IO Error")]
     IOError,
     #[display("Actix Error")]
@@ -26,7 +27,7 @@ impl error::ResponseError for HttpError {
 
     fn status_code(&self) -> StatusCode {
         match *self {
-            HttpError::CoreError | HttpError::IOError | HttpError::ActixError => StatusCode::INTERNAL_SERVER_ERROR,
+            HttpError::CoreError(_) | HttpError::IOError | HttpError::ActixError => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -39,8 +40,8 @@ impl From<actix_web::Error> for HttpError {
 }
 
 impl From<CoreError> for HttpError {
-    fn from(_error: CoreError) -> Self {
-        HttpError::CoreError
+    fn from(error: CoreError) -> Self {
+        HttpError::CoreError(error)
     }
 }
 
@@ -49,3 +50,4 @@ pub mod user;
 pub mod task;
 pub mod log;
 pub mod bgm;
+pub mod error_handler;

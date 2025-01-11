@@ -25,4 +25,6 @@ pub enum BgmData {
     UpdateTime,
     CreateTime,
     Rating,
+    #[sea_orm(iden = "ep_bind")]
+    EpBind,
 }

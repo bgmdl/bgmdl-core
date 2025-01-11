@@ -1,35 +1,10 @@
 use crate::declare::{bangumi, error::CoreError};
-use reqwest::{
-    self, blocking,
-    header::{ACCEPT, USER_AGENT},
-};
+use reqwest::header::{ACCEPT, USER_AGENT};
 
 pub type Result<T> = ::std::result::Result<T, CoreError>;
 
-pub fn search_bangumi(client: blocking::Client, key: String) -> Result<bangumi::BangumiSearch> {
-    let url = format!("https://api.bgm.tv/search/subject/{}?type=2", key);
-    let res = client.get(url.as_str()).send()?;
-    let body = res.text()?;
-    let bangumi_search: bangumi::BangumiSearch = serde_json::from_str(&body)?;
-    Ok(bangumi_search)
-}
-
-pub fn get_bangumi_info(client: blocking::Client, key: String) -> Result<bangumi::BangumiInfo> {
-    let search_result = search_bangumi(client.clone(), key)?;
-    let id = search_result.list.unwrap()[0].id.unwrap();
-    let url = format!("https://api.bgm.tv/v0/subjects/{}", id);
-    let res = client
-        .get(url.as_str())
-        .header(USER_AGENT, "BGMdl Crawal")
-        .header(ACCEPT, "json")
-        .send()?;
-    let body = res.text()?;
-    let bangumi_info: bangumi::BangumiInfo = serde_json::from_str(&body)?;
-    Ok(bangumi_info)
-}
-
-pub async fn search_bangumi_async(
-    client: reqwest::Client,
+pub async fn search_bangumi(
+    client: &reqwest::Client,
     key: String,
 ) -> Result<bangumi::BangumiSearch> {
     let url = format!("https://api.bgm.tv/search/subject/{}?type=2", key);
@@ -39,11 +14,11 @@ pub async fn search_bangumi_async(
     Ok(bangumi_search)
 }
 
-pub async fn get_bangumi_info_async(
-    client: reqwest::Client,
+pub async fn get_bangumi_info(
+    client: &reqwest::Client,
     key: String,
 ) -> Result<bangumi::BangumiInfo> {
-    let search_result = search_bangumi_async(client.clone(), key).await?;
+    let search_result = search_bangumi(client, key).await?;
     let id = search_result.list.unwrap()[0].id.unwrap();
     let url = format!("https://api.bgm.tv/v0/subjects/{}", id);
     let res = client
@@ -57,8 +32,24 @@ pub async fn get_bangumi_info_async(
     Ok(bangumi_info)
 }
 
-pub async fn get_bangumi_info_with_bgmid_async(
-    client: reqwest::Client,
+pub async fn get_bangumi_ep(client: &reqwest::Client, bgmid: i32) -> Result<bangumi::BangumiEp> {
+    let url = format!(
+        "https://api.bgm.tv/v0/episodes?subject_id={}&type=0&limit=200&offset=0",
+        bgmid
+    );
+    let res = client
+        .get(url.as_str())
+        .header(USER_AGENT, "BGMdl Crawal")
+        .header(ACCEPT, "json")
+        .send()
+        .await?;
+    let body = res.text().await?;
+    let bangumi_ep: bangumi::BangumiEp = serde_json::from_str(&body)?;
+    Ok(bangumi_ep)
+}
+
+pub async fn get_bangumi_info_with_bgmid(
+    client: &reqwest::Client,
     bgmid: i32,
 ) -> Result<bangumi::BangumiInfo> {
     let url = format!("https://api.bgm.tv/v0/subjects/{}", bgmid);
@@ -73,8 +64,8 @@ pub async fn get_bangumi_info_with_bgmid_async(
     Ok(bangumi_info)
 }
 
-pub fn get_bangumi_names(client: blocking::Client, key: String) -> Result<Vec<String>> {
-    let result = get_bangumi_info(client, key)?;
+pub async fn get_bangumi_names(client: &reqwest::Client, key: String) -> Result<Vec<String>> {
+    let result = get_bangumi_info(client, key).await?;
     let mut names = vec![result.name.unwrap()];
     for keys in result.infobox.unwrap() {
         if keys.key.unwrap() == "别名" {
@@ -95,19 +86,22 @@ pub fn get_bangumi_names(client: blocking::Client, key: String) -> Result<Vec<St
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reqwest::blocking;
 
     #[test]
     fn test_get_bangumi_info() {
-        let client = blocking::Client::new();
-        let res = get_bangumi_info(client, "前辈是伪娘".to_string());
-        dbg!(&res);
+        async_run! {
+            let client = reqwest::Client::new();
+            let res = get_bangumi_info(&client, "前辈是伪娘".to_string()).await;
+            dbg!(&res);
+        }
     }
 
     #[test]
     fn test_get_bangumi_names() {
-        let client = blocking::Client::new();
-        let res = get_bangumi_names(client, "前辈是伪娘".to_string());
-        dbg!(&res);
+        async_run! {
+            let client = reqwest::Client::new();
+            let res = get_bangumi_names(&client, "前辈是伪娘".to_string()).await;
+            dbg!(&res);
+        }
     }
 }

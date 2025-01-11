@@ -218,3 +218,59 @@ pub struct BangumiSearch {
     #[serde(rename = "results")]
     pub results: Option<i32>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BangumiEpData {
+    #[serde(rename = "airdate")]
+    pub airdate: Option<String>,
+
+    #[serde(rename = "comment")]
+    pub comment: Option<i32>,
+
+    #[serde(rename = "desc")]
+    pub desc: Option<String>,
+
+    #[serde(rename = "disc")]
+    pub disc: Option<i32>,
+
+    #[serde(rename = "duration")]
+    pub duration: Option<String>,
+
+    #[serde(rename = "duration_seconds")]
+    pub duration_seconds: Option<i32>,
+
+    #[serde(rename = "ep")]
+    pub ep: Option<i32>,
+
+    #[serde(rename = "id")]
+    pub id: Option<i32>,
+
+    #[serde(rename = "name")]
+    pub name: Option<String>,
+
+    #[serde(rename = "name_cn")]
+    pub name_cn: Option<String>,
+
+    #[serde(rename = "sort")]
+    pub sort: Option<i32>,
+
+    #[serde(rename = "subject_id")]
+    pub subject_id: Option<i32>,
+
+    #[serde(rename = "type")]
+    pub data_type: Option<i32>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BangumiEp {
+    #[serde(rename = "data")]
+    pub data: Option<Vec<BangumiEpData>>,
+
+    #[serde(rename = "limit")]
+    pub limit: Option<i32>,
+
+    #[serde(rename = "offset")]
+    pub offset: Option<i32>,
+
+    #[serde(rename = "total")]
+    pub total: Option<i32>,
+}

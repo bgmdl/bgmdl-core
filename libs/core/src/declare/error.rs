@@ -3,16 +3,18 @@ use sea_orm::DbErr;
 
 #[derive(Debug, Display)]
 pub enum CoreError {
-    #[display("(CoreError) Db Error")]
+    #[display("Db Error")]
     DbError(DbErr),
-    #[display("(CoreError) Std Error")]
+    #[display("Std Error")]
     StdError(Box<dyn std::error::Error>),
-    #[display("(CoreError) Error")]
+    #[display("Error: {}", _0)]
     StringError(String),
-    #[display("(CoreError) Actix Error")]
+    #[display("Actix Error")]
     ReqwestError(reqwest::Error),
-    #[display("(CoreError) Json Parse Error")]
+    #[display("Json Parse Error")]
     ParseError(serde_json::Error),
+    #[display("Not Found")]
+    NotFound,
 }
 
 impl From<reqwest::Error> for CoreError {

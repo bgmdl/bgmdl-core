@@ -62,6 +62,40 @@ pub struct BangumiInfo {
     pub rating: Option<f64>,
     pub tags: Option<Vec<String>>,
     pub summary: Option<String>,
+    pub ep_bind: Option<Vec<i32>>,
+}
+
+impl From<BangumiModel> for BangumiInfo {
+    fn from(data: BangumiModel) -> Self {
+        let tags = if let Some(tags) = data.tags {
+            serde_json::from_str(&tags).ok()
+        } else {
+            None
+        };
+        let ep_bind = if let Some(ep_bind) = data.ep_bind {
+            serde_json::from_str(&ep_bind).ok()
+        } else {
+            None
+        };
+        BangumiInfo {
+            db_id: Some(data.id),
+            bgm_status: data.bgm_status.into(),
+            total_ep: data.total_ep,
+            now_ep: data.now_ep,
+            bind_bgm_id: data.bind_bgm_id,
+            year: data.year,
+            season: data.season,
+            image: data.image,
+            name_cn: data.name_cn,
+            name: Some(data.name),
+            nsfw: data.nsfw,
+            platform: data.platform,
+            rating: data.rating,
+            tags,
+            summary: data.summary,
+            ep_bind,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,12 +112,23 @@ pub struct BangumiDownload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BangumiEp {
+    pub id: i32,
+    pub name: String,
+    pub name_cn: String,
+    pub air_date: NaiveDateTime,
+    pub ep: i32,
+    pub bgm_ep_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bangumi {
     pub id: i32,
     #[serde(flatten)]
     pub info: Option<BangumiInfo>,
     #[serde(flatten)]
     pub download: Option<BangumiDownload>,
+    pub eps: Option<Vec<BangumiEp>>,
     /// lock_data: which data is locked by user.
     pub lock_data: Vec<String>,
 }
@@ -112,8 +157,21 @@ impl From<&BangumiInfo> for BangumiModel {
                     None
                 }
             },
+            ep_bind: {
+                if let Some(ep_bind) = bgminfo.ep_bind.clone() {
+                    serde_json::to_string(&ep_bind).ok()
+                } else {
+                    None
+                }
+            },
             summary: bgminfo.summary,
         }
+    }
+}
+
+impl From<BangumiInfo> for BangumiModel {
+    fn from(data: BangumiInfo) -> Self {
+        (&data).into()
     }
 }
 
@@ -129,7 +187,7 @@ fn parse_date(data: &str) -> (i32, i32) {
 }
 
 macro_rules! sync_prop_with_check {
-    ($bgm_data:expr, $lock_data:expr, $($prop:ident: $new_prop:expr),*) => {
+    ($bgm_data:expr, $lock_data:expr, {$($prop:ident: $new_prop:expr),*}) => {
         $(
             if !$lock_data.contains(&stringify!($prop).to_string()) {
                 $bgm_data.$prop = $new_prop;
@@ -167,16 +225,15 @@ impl BangumiInfo {
         info.db_id = Some(id);
         log::debug!("Add bangumi: {id}");
         log::debug!("bangumi data: {:?}", &self);
-        let res =
-            BangumiEntity::insert((&info).conv::<BangumiModel>().conv::<BangumiActiveModel>())
-                .exec(db)
-                .await;
-        dbg!(&res);
+        BangumiEntity::insert((&info).conv::<BangumiModel>().conv::<BangumiActiveModel>())
+            .exec(db)
+            .await?;
         log::trace!("add bangumi {id} into database done.");
         Ok(SaveInfoData::SaveData(Bangumi {
             id,
             info: Some(info),
             download: None,
+            eps: None,
             lock_data: vec![],
         }))
     }
@@ -189,16 +246,17 @@ impl BangumiInfo {
         match sync_type {
             SyncType::BgmTv => {
                 let client = reqwest::Client::new();
-                let new_data = bangumi::get_bangumi_info_with_bgmid_async(
-                    client,
-                    self.bind_bgm_id.unwrap_or(1),
-                )
-                .await?;
+                let new_data =
+                    bangumi::get_bangumi_info_with_bgmid(&client, self.bind_bgm_id.unwrap_or(1))
+                        .await?;
                 let (year, month) =
                     parse_date(new_data.date.unwrap_or("1000-01-01".to_string()).as_str());
-                sync_prop_with_check! {*self, lock_data,
+                let ep_data =
+                    bangumi::get_bangumi_ep(&client, self.bind_bgm_id.unwrap_or(1)).await?;
+                sync_prop_with_check! (*self, lock_data, {
                     year: Some(year),
                     season: Some(month),
+                    total_ep: new_data.eps,
                     image: {
                         if let Some(image) = new_data.images {
                             image.large
@@ -206,17 +264,37 @@ impl BangumiInfo {
                             None
                         }
                     },
+                    name: new_data.name,
                     name_cn: new_data.name_cn,
                     nsfw: new_data.nsfw,
                     platform: new_data.platform,
                     rating: Some(new_data.rating.unwrap().score.unwrap()),
                     tags: Some(new_data.tags.unwrap().iter().map(|x| x.name.clone().unwrap()).collect()),
-                    summary: new_data.summary
-                };
+                    summary: new_data.summary,
+                    ep_bind: Some(ep_data.data.unwrap().iter().map(|x| x.id.unwrap()).collect())
+                });
                 Ok(())
             }
         }
     }
+
+    pub async fn from_id(id: i32, db: &DatabaseConnection) -> Result<Self, CoreError> {
+        let data = BangumiEntity::find()
+            .filter(BangumiColumn::Id.eq(id))
+            .one(db)
+            .await?;
+        if let Some(data) = data {
+            Ok(data.conv::<Self>())
+        } else {
+            Err(CoreError::NotFound)
+        }
+    }
 }
 
-impl Bangumi {}
+impl Bangumi {
+    pub async fn get_info_from_db(&mut self, db: &DatabaseConnection) -> Result<(), CoreError> {
+        let data = BangumiInfo::from_id(self.id, db).await?;
+        self.info = Some(data);
+        Ok(())
+    }
+}

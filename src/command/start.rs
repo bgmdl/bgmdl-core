@@ -7,7 +7,7 @@
 use download_link::Callback;
 use fern::Output;
 use log::LevelFilter;
-use std::str::FromStr;
+use std::{panic, str::FromStr};
 
 use crate::{handle, model::task::callback, service::Task, utils::{config_load::env_load, logger::{setup_logger, LogData}}, TASK_SENDER};
 
@@ -30,6 +30,9 @@ pub fn run(log_level: String, config: Option<String>, port: Option<String>) {
     );
     let config_path = config.unwrap_or("~/.bgmdl/config.json".to_string());
     env_load(&config_path);
+    panic::set_hook(Box::new(|info| {
+        log::error!("Panic occurred: {:?}", info);
+    }));
     log::info!("Env loaded: {:?}", get_env!());
     core::service::start(
         get_env!(download.tool_path).as_str(),
