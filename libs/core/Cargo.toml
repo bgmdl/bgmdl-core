@@ -17,6 +17,7 @@ sea-orm = { version = "1.0.0-rc.5", features = [ "sqlx-postgres", "sqlx-sqlite",
 log = "0.4.22"
 state = "0.6.0"
 download_link = { path = "../download_link" }
+macro_db_init = { path = "../macro_db_init" }
 lazy_static = "1.5.0"
 dyn-clone = "1.0.17"
 libloading = "0.8.5"

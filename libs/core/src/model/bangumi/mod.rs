@@ -289,6 +289,18 @@ impl BangumiInfo {
             Err(CoreError::NotFound)
         }
     }
+
+    pub async fn from_bgm_id(bgm_id: i32, db: &DatabaseConnection) -> Result<Self, CoreError> {
+        let data = BangumiEntity::find()
+            .filter(BangumiColumn::BindBgmId.eq(bgm_id))
+            .one(db)
+            .await?;
+        if let Some(data) = data {
+            Ok(data.conv::<Self>())
+        } else {
+            Err(CoreError::NotFound)
+        }
+    }
 }
 
 impl Bangumi {

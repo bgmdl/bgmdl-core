@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use log::LevelFilter;
+use macro_db_init::table_create;
 use sea_orm::{ActiveModelTrait, ActiveValue, ConnectOptions, Database};
 use sea_orm_migration::prelude::*;
 
@@ -13,167 +14,77 @@ impl MigrationTrait for MigrationBgmData {
     async fn up(&self, manage: &SchemaManager) -> Result<(), DbErr> {
         log::info!("Creating table user");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::user::User::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::user::User::Id)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(iden::user::User::Name).string().not_null())
-                    .col(
-                        ColumnDef::new(iden::user::User::Password)
-                            .string()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
+            .create_table(table_create!(iden::user::User, {
+                Id: integer not_null primary_key,
+                Name: string not_null,
+                Password: string not_null,
+            }))
             .await?;
         log::info!("Creating table task");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::task::Task::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::task::Task::TId)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(iden::task::Task::Name).string().not_null())
-                    .col(ColumnDef::new(iden::task::Task::Status).string().not_null())
-                    .col(
-                        ColumnDef::new(iden::task::Task::Description)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::task::Task::CreatedAt)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
+            .create_table(table_create!(iden::task::Task, {
+                TId: integer not_null primary_key,
+                Name: string not_null,
+                Status: string not_null,
+                Description: string not_null,
+                CreatedAt: date_time not_null,
+            }))
             .await?;
         log::info!("Creating table task_status");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::task_status::TaskStatus::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::task_status::TaskStatus::TSId)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::task_status::TaskStatus::TId)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::task_status::TaskStatus::Level)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::task_status::TaskStatus::Content)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::task_status::TaskStatus::CreatedAt)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
+            .create_table(table_create!(iden::task_status::TaskStatus, {
+                TSId: integer not_null primary_key,
+                TId: integer not_null,
+                Level: integer not_null,
+                Content: string not_null,
+                CreatedAt: date_time not_null,
+            }))
             .await?;
         log::info!("Creating table count");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::count::Count::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::count::Count::Key)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(iden::count::Count::Value)
-                            .integer()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
+            .create_table(table_create!(iden::count::Count, {
+                Key: string not_null primary_key,
+                Value: integer not_null,
+            }))
             .await?;
         log::info!("Creating table bgmdata");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::bgmdata::BgmData::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Id)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::BindBgmId).integer())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Status).string())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::BgmName).string())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::TotalEp).integer())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::NowEp).integer())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Year).integer())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Season).integer())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Image).string())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::NameCn).string())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::NSFW).boolean())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Platform).string())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Rating).float())
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Tags).string()) // save as json
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::Summary).string())
-                    .col(
-                        ColumnDef::new(iden::bgmdata::BgmData::Name)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .col(ColumnDef::new(iden::bgmdata::BgmData::EpBind).string())
-                    .to_owned(),
-            )
+            .create_table(table_create!(iden::bgmdata::BgmData, {
+                Id: integer not_null primary_key,
+                BindBgmId: integer,
+                Status: string,
+                BgmName: string,
+                TotalEp: integer,
+                NowEp: integer,
+                Year: integer,
+                Season: integer,
+                Image: string,
+                NameCn: string,
+                NSFW: boolean,
+                Platform: string,
+                Rating: float,
+                Tags: string, // save as json
+                Summary: string,
+                Name: date_time not_null,
+                EpBind: string,
+            }))
             .await?;
         log::info!("Creating table bgmeps");
         manage
-            .create_table(
-                Table::create()
-                    .table(iden::bgmeps::BgmEps::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(iden::bgmeps::BgmEps::Id)
-                            .integer()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::EpId).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::SubjectId).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Name).string())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Duration).string())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::AirDate).string())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Desc).string())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Ep).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Sort).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Comment).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::Disc).integer())
-                    .col(ColumnDef::new(iden::bgmeps::BgmEps::DurationSecond).integer())
-                    .to_owned(),
-            )
+            .create_table(table_create! (iden::bgmeps::BgmEps, {
+                Id: integer not_null primary_key,
+                EpId: integer,
+                SubjectId: integer,
+                Name: string,
+                Duration: string,
+                AirDate: string,
+                Desc: string,
+                Ep: integer,
+                Sort: integer,
+                Comment: integer,
+                Disc: integer,
+                DurationSecond: integer,
+            }))
             .await?;
         Ok(())
     }
