@@ -7,9 +7,10 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub ep_id: i32,
-    pub subject_id: i32,
-    pub name: String,
-    pub duration: String,
+    pub fansub_id: String,
+    pub time: DateTime,
+    pub bind_bgm_id: i32,
+    pub bing_task_id: i32,
 }
 
 

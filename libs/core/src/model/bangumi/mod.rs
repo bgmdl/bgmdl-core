@@ -5,6 +5,7 @@ use sea_orm::ColumnTrait;
 use sea_orm::DatabaseConnection;
 use sea_orm::EntityTrait;
 use sea_orm::QueryFilter;
+use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 use tap::Conv;
 
@@ -14,7 +15,29 @@ use crate::declare::db::entity::bgmdata::Column as BangumiColumn;
 use crate::declare::db::entity::bgmdata::Entity as BangumiEntity;
 use crate::declare::db::entity::bgmdata::Model as BangumiModel;
 
+use crate::declare::db::entity::bgmdownload::ActiveModel as BangumiDownloadActiveModel;
+use crate::declare::db::entity::bgmdownload::Column as BangumiDownloadColumn;
+use crate::declare::db::entity::bgmdownload::Entity as BangumiDownloadEntity;
+use crate::declare::db::entity::bgmdownload::Model as BangumiDownloadModel;
+
 use crate::{declare::error::CoreError, model::count::gen_id};
+
+macro_rules! sync_prop_with_check {
+    ($bgm_data:expr, $lock_data:expr, {$($prop:ident: $new_prop:expr),*}) => {
+        $(
+            if !$lock_data.contains(&stringify!($prop).to_string()) {
+                $bgm_data.$prop = $new_prop;
+            }
+        )*
+    };
+}
+
+fn parse_date(data: &str) -> (i32, i32) {
+    let date = data.split('-').collect::<Vec<&str>>();
+    let year = date[0].parse::<i32>().unwrap();
+    let month = date[1].parse::<i32>().unwrap();
+    (year, month)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum BangumiStatus {
@@ -24,24 +47,14 @@ pub enum BangumiStatus {
     NotStart,
 }
 
-impl fmt::Display for BangumiStatus {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            BangumiStatus::Air => write!(f, "Air"),
-            BangumiStatus::End => write!(f, "End"),
-            BangumiStatus::NotStart => write!(f, "NotStart"),
-        }
-    }
+pub enum SyncType {
+    BgmTv,
 }
 
-impl From<String> for BangumiStatus {
-    fn from(s: String) -> Self {
-        match s.as_str() {
-            "Air" | "air" => BangumiStatus::Air,
-            "End" | "end" => BangumiStatus::End,
-            _ => BangumiStatus::NotStart,
-        }
-    }
+#[allow(clippy::large_enum_variant)]
+pub enum SaveInfoData {
+    UpdateSuccess(()),
+    SaveData(Bangumi),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -63,6 +76,63 @@ pub struct BangumiInfo {
     pub tags: Option<Vec<String>>,
     pub summary: Option<String>,
     pub ep_bind: Option<Vec<i32>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BangumiDownloadInfo {
+    pub ep: i32,
+    pub fansub: Vec<String>,
+    pub download_time: NaiveDateTime,
+    pub bind_task_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BangumiDownload {
+    pub download_info: Vec<BangumiDownloadInfo>,
+    pub id: i32,
+    pub fansub_strategy: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BangumiEp {
+    pub id: i32,
+    pub name: String,
+    pub name_cn: String,
+    pub air_date: NaiveDateTime,
+    pub ep: i32,
+    pub bgm_ep_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bangumi {
+    pub id: i32,
+    #[serde(flatten)]
+    pub info: Option<BangumiInfo>,
+    #[serde(flatten)]
+    pub download: Option<BangumiDownload>,
+    pub eps: Option<Vec<BangumiEp>>,
+    /// lock_data: which data is locked by user.
+    pub lock_data: Vec<String>,
+}
+
+impl fmt::Display for BangumiStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            BangumiStatus::Air => write!(f, "Air"),
+            BangumiStatus::End => write!(f, "End"),
+            BangumiStatus::NotStart => write!(f, "NotStart"),
+        }
+    }
+}
+
+impl From<String> for BangumiStatus {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "Air" | "air" => BangumiStatus::Air,
+            "End" | "end" => BangumiStatus::End,
+            _ => BangumiStatus::NotStart,
+        }
+    }
 }
 
 impl From<BangumiModel> for BangumiInfo {
@@ -96,41 +166,6 @@ impl From<BangumiModel> for BangumiInfo {
             ep_bind,
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BangumiDownloadInfo {
-    pub ep: i32,
-    pub fansub: Vec<String>,
-    pub download_time: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BangumiDownload {
-    pub download_info: Vec<BangumiDownloadInfo>,
-    pub fansub_strategy: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BangumiEp {
-    pub id: i32,
-    pub name: String,
-    pub name_cn: String,
-    pub air_date: NaiveDateTime,
-    pub ep: i32,
-    pub bgm_ep_id: i32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Bangumi {
-    pub id: i32,
-    #[serde(flatten)]
-    pub info: Option<BangumiInfo>,
-    #[serde(flatten)]
-    pub download: Option<BangumiDownload>,
-    pub eps: Option<Vec<BangumiEp>>,
-    /// lock_data: which data is locked by user.
-    pub lock_data: Vec<String>,
 }
 
 impl From<&BangumiInfo> for BangumiModel {
@@ -175,39 +210,59 @@ impl From<BangumiInfo> for BangumiModel {
     }
 }
 
-pub enum SyncType {
-    BgmTv,
-}
-
-fn parse_date(data: &str) -> (i32, i32) {
-    let date = data.split('-').collect::<Vec<&str>>();
-    let year = date[0].parse::<i32>().unwrap();
-    let month = date[1].parse::<i32>().unwrap();
-    (year, month)
-}
-
-macro_rules! sync_prop_with_check {
-    ($bgm_data:expr, $lock_data:expr, {$($prop:ident: $new_prop:expr),*}) => {
-        $(
-            if !$lock_data.contains(&stringify!($prop).to_string()) {
-                $bgm_data.$prop = $new_prop;
-            }
-        )*
-    };
-}
-
-#[allow(clippy::large_enum_variant)]
-pub enum SaveInfoData {
-    UpdateSuccess(()),
-    SaveData(Bangumi),
-}
-
 impl From<SaveInfoData> for Bangumi {
     fn from(val: SaveInfoData) -> Self {
         match val {
             SaveInfoData::SaveData(data) => data,
             SaveInfoData::UpdateSuccess(_) => panic!("UpdateSuccess can't convert to Bangumi"),
         }
+    }
+}
+
+impl From<&BangumiDownloadModel> for BangumiDownloadInfo {
+    fn from(data: &BangumiDownloadModel) -> Self {
+        BangumiDownloadInfo {
+            ep: data.ep_id,
+            fansub: serde_json::from_str(&data.fansub_id).unwrap(),
+            download_time: data.time,
+            bind_task_id: data.bing_task_id,
+        }
+    }
+}
+
+impl BangumiDownload {
+    pub async fn from_id(id: i32, db: &DatabaseConnection) -> Result<Self, CoreError> {
+        let data = BangumiDownloadEntity::find()
+            .filter(BangumiDownloadColumn::Id.eq(id))
+            .all(db)
+            .await?;
+        if data.is_empty() {
+            return Err(CoreError::NotFound);
+        }
+        let download_info = data
+            .iter()
+            .map(|x| x.into())
+            .collect();
+        Ok(BangumiDownload {
+            id,
+            download_info,
+            fansub_strategy: "".to_string(),
+        })
+    }
+
+    pub async fn save(&mut self, info: BangumiDownloadInfo, db: &DatabaseConnection) -> Result<(), CoreError> {
+        BangumiDownloadEntity::insert(BangumiDownloadActiveModel {
+            ep_id: Set(info.ep),
+            fansub_id: Set(serde_json::to_string(&info.fansub).unwrap()),
+            time: Set(info.download_time),
+            bind_bgm_id: Set(self.id),
+            bing_task_id: Set(info.bind_task_id),
+            ..Default::default()
+        })
+        .exec(db)
+        .await?;
+        self.download_info.push(info);
+        Ok(())
     }
 }
 
@@ -305,8 +360,10 @@ impl BangumiInfo {
 
 impl Bangumi {
     pub async fn get_info_from_db(&mut self, db: &DatabaseConnection) -> Result<(), CoreError> {
-        let data = BangumiInfo::from_id(self.id, db).await?;
-        self.info = Some(data);
+        let info = BangumiInfo::from_id(self.id, db).await?;
+        self.info = Some(info);
+        let download = BangumiDownload::from_id(self.id, db).await?;
+        self.download = Some(download);
         Ok(())
     }
 }

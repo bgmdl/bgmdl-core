@@ -86,6 +86,16 @@ impl MigrationTrait for MigrationBgmData {
                 DurationSecond: integer,
             }))
             .await?;
+        manage
+            .create_table(table_create!(iden::bgmdownload::BangumiDownload, {
+                Id: integer not_null primary_key,
+                EpId: integer,
+                FansubId: string,
+                Time: date_time,
+                BindBgmId: integer,
+                BingTaskId: integer,
+            }))
+            .await?;
         Ok(())
     }
 
@@ -130,6 +140,15 @@ impl MigrationTrait for MigrationBgmData {
             .drop_table(
                 Table::drop()
                     .table(iden::count::Count::Table)
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        log::warn!("Dropping table bgmeps");
+        manage
+            .drop_table(
+                Table::drop()
+                    .table(iden::bgmeps::BgmEps::Table)
                     .if_exists()
                     .to_owned(),
             )

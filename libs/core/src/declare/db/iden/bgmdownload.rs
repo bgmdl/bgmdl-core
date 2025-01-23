@@ -1,13 +1,13 @@
 use sea_orm::DeriveIden;
 
 #[derive(DeriveIden)]
-pub enum BgmData {
+pub enum BangumiDownload {
     #[sea_orm(iden = "bgm_download")]
     Table,
     Id,
     EpId,
-    SubjectId,
-    Name,
+    FansubId,
+    Time,
     BindBgmId,
     BingTaskId,
 }
