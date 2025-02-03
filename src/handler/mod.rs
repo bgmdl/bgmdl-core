@@ -19,7 +19,7 @@ pub enum HttpError {
 impl error::ResponseError for HttpError {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
-            .insert_header(ContentType::html())
+            .insert_header(ContentType::json())
             .body(Json!{
                 "error": self.to_string()
             })

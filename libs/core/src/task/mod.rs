@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use model::{TaskDetail, TaskOption, TaskQueue};
 use std::{sync::Mutex, thread};
 
-use crate::env::DOWNLOAD_CALLBACK_FUNC_REF;
+use crate::env::{DOWNLOAD_CALLBACK_FUNC_REF, SCHEDULE_AGENDA};
 
 pub mod model;
 pub mod run;
@@ -28,6 +28,14 @@ pub fn add_task(task_detail: TaskDetail, task_option: TaskOption, priority: i32)
 #[allow(clippy::await_holding_lock)]
 pub fn apply(callback: &'static Callback) {
     thread::spawn(move || {
+        lazy_static::initialize(&SCHEDULE_AGENDA);
+        async_run! {
+            log::info!("cron schedule thread start");
+            SCHEDULE_AGENDA.lock().unwrap().start().await.unwrap();
+        }
+    });
+
+    thread::spawn(move || {
         *DOWNLOAD_CALLBACK_FUNC_REF.lock().unwrap() = callback;
         async_run! {
             log::info!("task thread start");
@@ -46,7 +54,7 @@ pub fn apply(callback: &'static Callback) {
                 }
                 log::trace!("task exec top");
                 let _ = task_queue.exec_top().await;
-                thread::sleep(std::time::Duration::from_millis(300));
+                thread::sleep(std::time::Duration::from_millis(500));
             }
         }
     });

@@ -239,10 +239,7 @@ impl BangumiDownload {
         if data.is_empty() {
             return Err(CoreError::NotFound);
         }
-        let download_info = data
-            .iter()
-            .map(|x| x.into())
-            .collect();
+        let download_info = data.iter().map(|x| x.into()).collect();
         Ok(BangumiDownload {
             id,
             download_info,
@@ -250,7 +247,11 @@ impl BangumiDownload {
         })
     }
 
-    pub async fn save(&mut self, info: BangumiDownloadInfo, db: &DatabaseConnection) -> Result<(), CoreError> {
+    pub async fn save(
+        &mut self,
+        info: BangumiDownloadInfo,
+        db: &DatabaseConnection,
+    ) -> Result<(), CoreError> {
         BangumiDownloadEntity::insert(BangumiDownloadActiveModel {
             ep_id: Set(info.ep),
             fansub_id: Set(serde_json::to_string(&info.fansub).unwrap()),

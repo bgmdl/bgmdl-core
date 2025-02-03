@@ -1,7 +1,9 @@
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
-    braced, parse::{Parse, ParseStream, Result}, parse_macro_input, Ident, Path, Token
+    braced,
+    parse::{Parse, ParseStream, Result},
+    parse_macro_input, Ident, Path, Token,
 };
 
 struct TableDef {
@@ -13,16 +15,16 @@ impl Parse for TableDef {
     fn parse(input: ParseStream) -> Result<Self> {
         let table_name: Path = input.parse()?;
         input.parse::<Token![,]>()?;
-        
+
         let content;
         braced!(content in input);
-        
+
         let mut columns = Vec::new();
         while !content.is_empty() {
             let column: Column = content.parse()?;
             columns.push(column);
         }
-        
+
         Ok(TableDef {
             table_name,
             columns,
@@ -75,20 +77,22 @@ impl<'a> ToTokens for ColumnWithTable<'a> {
         let name = &self.column.name;
         let type_name = &self.column.type_name;
         let modifiers = &self.column.modifiers;
-        
+
         let col_def = quote! {
             .col(ColumnDef::new(#table_name::#name).#type_name() #(.#modifiers())*)
         };
-        
+
         tokens.extend(col_def);
     }
 }
 
 #[proc_macro]
 pub fn table_create(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as TableDef);
+    let input: TableDef = parse_macro_input!(input as TableDef);
     let table_name = &input.table_name;
-    let columns: Vec<_> = input.columns.iter()
+    let columns: Vec<_> = input
+        .columns
+        .iter()
         .map(|col| col.with_table(table_name))
         .collect();
 
@@ -99,6 +103,6 @@ pub fn table_create(input: TokenStream) -> TokenStream {
             #(#columns)*
             .to_owned()
     };
-    
+
     expanded.into()
 }

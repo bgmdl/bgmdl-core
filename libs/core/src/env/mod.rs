@@ -1,9 +1,8 @@
-use std::sync::{Arc, Mutex};
-
+use crate::utils::pluginload::DownloadHandler;
 use download_link::Callback;
 use lazy_static::lazy_static;
-
-use crate::utils::pluginload::DownloadHandler;
+use std::sync::{Arc, Mutex};
+use tokio_cron_scheduler::JobScheduler;
 
 lazy_static! {
     pub static ref DOWNLOAD_PATH: Mutex<String> = Mutex::new(String::from(""));
@@ -19,4 +18,7 @@ lazy_static! {
     pub static ref DOWNLOAD_CALLBACK_FUNC_REF: Arc<Mutex<&'static Callback>> = Arc::new(
         Mutex::new(&(crate::service::default_callback_func as Callback))
     );
+    pub static ref SCHEDULE_AGENDA: Mutex<JobScheduler> = Mutex::new(async_run! {
+        JobScheduler::new().await.unwrap()
+    });
 }

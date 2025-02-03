@@ -62,7 +62,7 @@ pub fn perm(attr: TokenStream, item: TokenStream) -> TokenStream {
         .contains("HttpResponse")
     {
         quote! {
-            return Ok(actix_web::HttpResponse::InternalServerError().json(Json! {
+            return Ok(actix_web::HttpResponse::InternalServerError().body(Json! {
                 "code": -1,
                 "msg": "No permission."
             }));
